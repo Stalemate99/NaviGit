@@ -2,7 +2,8 @@ const { BrowserWindow, app, ipcMain, Tray, Menu, MenuItem, globalShortcut } = re
 const path = require('path');
 
 let mainWindow;
-let tray = "nothing";
+let tray;
+let trayX,trayY = 0;
 
 app.on('ready', ()=> {
 
@@ -19,7 +20,7 @@ app.on('ready', ()=> {
 
   mainWindow.loadFile(`${__dirname}/app/index.html`);
 
-  const iconName = process.platform === 'win32' ? 'icon.ico' : 'icon-128.png';
+  const iconName = process.platform === 'win32' ? 'icon.ico' : 'icon.png';
   const iconPath = path.join(__dirname,`/assets/${iconName}`);
 
   tray = new Tray(iconPath);
@@ -47,30 +48,42 @@ app.on('ready', ()=> {
 
   globalShortcut.register('CommandOrControl+I', () => {
     console.log('Electron loves global shortcuts!');
+    toggleView();
   });
+
+  console.log(tray.getBounds());
 
   tray.on('click', (events, bound) => {
 
     const {x,y} = bound;
-    const { height, width } = mainWindow.getBounds();
-
+    trayX = x;
+    trayY = y;
+    
     // Toggling Visibility
-
-    if(mainWindow.isVisible()){
-      mainWindow.hide();
-    } else {
-
-      const yPos = process.platform === 'darwin' ? y : (y - height);
-      const xPos = x - parseInt(width / 2);
-
-      mainWindow.setBounds({
-        x: xPos, y: yPos, width: 300, height: 400
-      });
-
-      mainWindow.show();
-
-    }
+    toggleView();
 
   })
 
 })
+
+function toggleView() {
+
+  let x = trayX;
+  let y = trayY;
+
+  const { height, width } = mainWindow.getBounds();
+  if(mainWindow.isVisible()){
+    mainWindow.hide();
+  } else {
+
+    const yPos = process.platform === 'darwin' ? y : (y - height);
+    const xPos = x - parseInt(width / 2);
+
+    mainWindow.setBounds({
+      x: xPos, y: yPos, width: 300, height: 400
+    });
+
+    mainWindow.show();
+
+  }
+}

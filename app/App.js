@@ -5,9 +5,10 @@ import Home from "./containers/Home";
 import Help from "./containers/Help";
 import Preferences from "./containers/Preferences";
 import SignIn from "./containers/SignIn";
+import Sync from "./containers/Sync";
+import Settings from "./containers/Settings";
 
 import "./App.css";
-import Settings from "./containers/Settings";
 
 export default function App() {
   const [signIn, setSignIn] = useState(false); // by default false - Changing to work with others
@@ -18,12 +19,13 @@ export default function App() {
 
   return (
     <>
-      {signIn ? null : <Redirect to="/" />}
+      {signIn ? null : <Redirect to="/sync" />}
       <Switch>
+        <Route path="/settings" component={Settings} />
+        <Route path="/sync" component={Sync} />
         <Route path="/signin" component={SignIn} />
         <Route path="/preferences" component={Preferences} />
         <Route path="/about" component={Help} />
-        <Route path="/settings" component={Settings} />
         <Route exact path="/" component={Home} />
       </Switch>
     </>

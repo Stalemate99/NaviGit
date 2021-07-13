@@ -19,7 +19,8 @@ export default function RepoCard({ active, data }) {
       card.current.classList.add("active");
     }
     return () => {
-      card.current.classList.remove("active");
+      card.current.classList.indexOf("active") > -1 &&
+        card.current.classList.remove("active");
     };
   }, []);
 

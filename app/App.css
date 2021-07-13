@@ -67,19 +67,19 @@
   border: 1.5px solid #69cc8e;
   border-radius: 20px;
   font-family: Avenir Next;
+  font-size: 23px;
   font-style: normal;
-  font-weight: normal;
-  font-size: 25px;
-  line-height: 34px;
+  font-weight: 400;
+  line-height: 28px;
+  letter-spacing: 0px;
   text-align: center;
-  letter-spacing: 0.005em;
   height: 100%;
-  width: max-content;
-  padding: 0.2em;
+  padding: 0.5em 0;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-evenly;
   align-items: center;
   cursor: pointer;
+  width: 250px;
 }
 
 .button:focus {
@@ -94,7 +94,7 @@
   grid-area: main;
   padding: 0.5em;
   display: grid;
-  grid-template-areas: "subtitle" "signin" "footer";
+  grid-template-areas: "subtitle" "signin";
   grid-template-rows: 50px 1fr 50px;
   justify-content: center;
   align-items: center;
@@ -674,4 +674,146 @@ html::-webkit-scrollbar {
   font-weight: 400;
   line-height: 28px;
   letter-spacing: 0px;
+}
+
+.sync-container {
+  background-color: #1c1a39;
+  color: #ffffff;
+  height: 100vh;
+  width: 100vw;
+  display: grid;
+  grid-template-areas: "." "header" "sync_content" "sync_footer";
+  grid-template-rows: 150px 0fr 1fr 0.4fr;
+}
+
+.sync-content {
+  grid-area: sync_content;
+  display: grid;
+  grid-template-areas: "sync_subtitle" "sync_buttons";
+  grid-template-rows: 0fr 1fr;
+  justify-content: center;
+  text-align: center;
+}
+
+.sync-subtitle {
+  grid-area: sync_subtitle;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-family: Avenir Next;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 28px;
+  letter-spacing: 0px;
+  width: 100vw;
+}
+
+.sync-buttons {
+  grid-area: sync_buttons;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 100%;
+  padding: 1em;
+}
+
+.sync-footer {
+  grid-area: sync_footer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Avenir Next;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 28px;
+  letter-spacing: 0px;
+}
+
+.button-tour {
+  background: #1c1a39;
+  color: #ffffff;
+  border: 1.5px solid #69cc8e;
+  border-radius: 18px;
+  font-family: Avenir Next LT Pro;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 25px;
+  line-height: 28px;
+  text-align: center;
+  letter-spacing: 0.005em;
+  height: 75px;
+  width: 275px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  justify-self: center;
+  cursor: pointer;
+}
+
+.button-tour:hover {
+  background: #69cc8e;
+}
+
+.button-tour:focus {
+  outline: 0;
+}
+
+.button-continue {
+  height: 75px;
+  width: 275px;
+  background: #1c1a39;
+  color: #adadb5;
+  border: 1.5px solid #adadb5;
+  border-radius: 20px;
+  font-family: Avenir Next;
+  font-size: 23px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 28px;
+  letter-spacing: 0px;
+  text-align: center;
+  padding: 0.5em 0;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.button-continue:hover {
+  background: #1c1a39;
+}
+
+.button-continue:focus {
+  outline: 0;
+}
+
+.button-continue-active {
+  height: 75px;
+  width: 275px;
+  background: #1c1a39;
+  color: white;
+  border: 1.5px solid #69cc8e;
+  border-radius: 20px;
+  font-family: Avenir Next;
+  font-size: 23px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 28px;
+  letter-spacing: 0px;
+  text-align: center;
+  padding: 0.5em 0;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  cursor: pointer;
+}
+
+.button-continue-active:hover {
+  background: #69cc8e;
+}
+
+.button-continue-active:focus {
+  outline: 0;
 }

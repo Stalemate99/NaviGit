@@ -4,12 +4,9 @@ const {
   ipcMain,
   Tray,
   Menu,
-  MenuItem,
   globalShortcut,
   screen,
-  Dock,
 } = require("electron");
-const { platform } = require("os");
 const path = require("path");
 
 let mainWindow;
@@ -18,7 +15,6 @@ let trayX,
   trayY = 0;
 
 app.on("ready", () => {
-  // app.dock.hide();
   mainWindow = new BrowserWindow({
     height: 632,
     width: 536,
@@ -36,33 +32,35 @@ app.on("ready", () => {
     1
   );
   mainWindow.setFullScreenable(false);
-
   mainWindow.loadFile(`${__dirname}/app/index.html`);
 
-  const iconName = process.platform === "win32" ? "icon.ico" : "Logo.png";
+  // Configuring Tray
+  const iconName = "Logo.png"; // Irrespective of OS png works fine
   const iconPath = path.join(__dirname, `/assets/${iconName}`);
 
   tray = new Tray(iconPath);
   tray.setToolTip("Navi~Git");
 
-  const menu = new Menu();
-
-  // app.dock.hide();
-
-  // if (!mainWindow.isVisible()) {
-  app.dock.show();
-  //   mainWindow.showInactive();
-
-  //   // And also hide it after a while
-  //   setTimeout(() => {
-  //     mainWindow.show();
-  //     app.dock.hide();
-  //   }, 1000);
-  // }
-
   const isMac = process.platform === "darwin";
 
-  const template = [
+  const trayTemplate = [
+    {
+      label: "Quit",
+      role: "quit",
+    },
+    {
+      label: "Settings",
+      click: () => {
+        // Invoke event cycle to infrom UI to trigger settings route.
+      },
+      accelerator: "CommandOrControl+S",
+    },
+  ];
+
+  tray.setContextMenu(Menu.buildFromTemplate(trayTemplate));
+
+  // Configuring Application Menu
+  const menuTemplate = [
     {
       label: "Navi~Git",
       submenu: [
@@ -98,14 +96,14 @@ app.on("ready", () => {
     },
   ];
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
   // Setting up Global Shortcuts
-
   globalShortcut.register("CommandOrControl+I", () => {
     toggleView();
   });
 
+  // Tray event handlers
   tray.on("click", (events, bound) => {
     const { x, y } = bound;
     trayX = x;
@@ -115,8 +113,10 @@ app.on("ready", () => {
     toggleView();
   });
 
+  // Close when focus is outside
   mainWindow.on("blur", (events, bound) => {
-    // mainWindow.hide();
+    mainWindow.hide();
+    process.platform === "darwin" && app.dock.show();
   });
 });
 

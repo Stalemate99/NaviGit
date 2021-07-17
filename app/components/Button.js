@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import Git from "../../assets/Git.svg";
 import GitHover from "../../assets/GitHover.svg";

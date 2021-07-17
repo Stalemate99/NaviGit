@@ -7,6 +7,7 @@ import Preferences from "./containers/Preferences";
 import SignIn from "./containers/SignIn";
 import Sync from "./containers/Sync";
 import Settings from "./containers/Settings";
+import Pat from "./containers/Pat";
 
 import "./App.css";
 
@@ -19,9 +20,10 @@ export default function App() {
 
   return (
     <>
-      {signIn ? null : <Redirect to="/sync" />}
+      {signIn ? null : <Redirect to="/about" />}
       <Switch>
         <Route path="/settings" component={Settings} />
+        <Route path="/pat" component={Pat} />
         <Route path="/sync" component={Sync} />
         <Route path="/signin" component={SignIn} />
         <Route path="/preferences" component={Preferences} />

@@ -12,7 +12,7 @@ export default function Sync() {
           Importing your profile, repos, pr’s and issues
         </p>
         <div className="sync-buttons">
-          <Button type="Continue" active={false} text="Continue" />
+          <Button type="Continue" active={true} text="Continue" />
           <Button type="Tour" text="Start tour" />
         </div>
       </div>

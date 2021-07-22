@@ -1,28 +1,36 @@
 import React from "react";
-import { Redirect } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 
 import Logo from "../../assets/Logo.svg";
 import LogoL from "../../assets/LogoL.svg";
 import NaviGit from "../../assets/Navi-Git.svg";
 import NaviGitL from "../../assets/Navi-Git-L.svg";
 import Settings from "../../assets/Cog.svg";
+import LogoSpin from "../../assets/LogoSpin.svg";
 
-export default function Header({ settings, from }) {
+export default function Header({ settings, from, sync = false }) {
+  const history = useHistory();
+
+  function renderLogo() {
+    if (sync) return <LogoSpin />;
+    return <Logo />;
+  }
+
   return (
     <div className={settings ? "header-large" : "header"}>
-      <div className="logo">{settings ? <Logo /> : <LogoL />}</div>
+      <div className="logo">{settings ? renderLogo() : <LogoL />}</div>
       <div className="title">{settings ? <NaviGit /> : <NaviGitL />}</div>
       <div className="settings">
         {settings && (
-          <Settings
+          <div
             onClick={() =>
-              from === "/settings" ? (
-                <Redirect to="/" />
-              ) : (
-                <Redirect to="/settings" />
-              )
+              from === "/settings"
+                ? history.push(from)
+                : history.push("/settings")
             }
-          />
+          >
+            <Settings />
+          </div>
         )}
       </div>
     </div>

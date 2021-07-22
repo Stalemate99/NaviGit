@@ -1,4 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useHistory } from "react-router-dom";
+
+import { Octokit } from "@octokit/core";
+import Store from "../js/store";
+import Navigit from "../js/navigit";
 
 import Header from "../components/Header";
 import Paste from "../../assets/Paste.svg";
@@ -9,6 +14,20 @@ export default function Pat() {
 
   const inputRef = useRef();
 
+  const history = useHistory();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Insert API calls
+      if (status === "error" || status === "scope") {
+        setStatus("");
+        setPat("");
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [status]);
+
   function renderClipboard() {
     navigator.clipboard.readText().then((text) => {
       setPat(text);
@@ -16,14 +35,39 @@ export default function Pat() {
     });
   }
 
+  async function registerToken() {
+    const store = new Store();
+    const octo = new Octokit({
+      auth: pat,
+    });
+    const navigit = new Navigit(octo, store);
+    try {
+      const result = await navigit.registerAccessToken();
+      if (!result) {
+        setStatus("scope");
+        return;
+      }
+      setStatus("success");
+    } catch (err) {
+      setStatus("error");
+    }
+  }
+
   useEffect(() => {
-    console.log("In hook");
     if (pat.length == 40) {
       setStatus("checking");
+      registerToken();
     } else if (pat.length > 40) {
       setStatus("error");
     }
   }, [pat]);
+
+  useEffect(() => {
+    if (status === "success") {
+      localStorage.setItem("signin", JSON.stringify({ authKey: pat }));
+      history.push("/preferences");
+    }
+  }, [status]);
 
   function renderClass() {
     if (pat.length < 40) {

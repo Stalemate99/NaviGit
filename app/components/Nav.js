@@ -4,9 +4,7 @@ import GitN from "../../assets/GitN.svg";
 import Issue from "../../assets/Issue.svg";
 import PR from "../../assets/PR.svg";
 
-export default function Nav({ currentTab }) {
-  const [active, setActive] = useState("Repos");
-
+export default function Nav({ currentTab, keyUpdate = "Repos" }) {
   const style = {
     active: {
       background: "#69CC8E",
@@ -32,10 +30,9 @@ export default function Nav({ currentTab }) {
   return (
     <div className="bg">
       <div
-        style={active === "Issues" ? style.active : style.normal}
+        style={keyUpdate === "Issues" ? style.active : style.normal}
         onClick={() => {
           currentTab("Issues");
-          setActive("Issues");
         }}
       >
         <label>
@@ -49,10 +46,9 @@ export default function Nav({ currentTab }) {
         </label>
       </div>
       <div
-        style={active === "Repos" ? style.active : style.normal}
+        style={keyUpdate === "Repos" ? style.active : style.normal}
         onClick={() => {
           currentTab("Repos");
-          setActive("Repos");
         }}
       >
         <label>
@@ -66,10 +62,9 @@ export default function Nav({ currentTab }) {
         </label>
       </div>
       <div
-        style={active === "PR's" ? style.active : style.normal}
+        style={keyUpdate === "PRs" ? style.active : style.normal}
         onClick={() => {
-          currentTab("PR's");
-          setActive("PR's");
+          currentTab("PRs");
         }}
       >
         <label>

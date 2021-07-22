@@ -12,18 +12,19 @@ import AssignedPri from "../../assets/IdPri.svg";
 import AssignedSec from "../../assets/IdSec.svg";
 import Pending from "../../assets/Pending.svg";
 
-export default function Card({ data, active, closed }) {
+export default function Card({ data, active, handleCardClick }) {
   const { number, message, status, time, repo_name } = data;
   const card = useRef();
 
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
-    }
-    return () => {
+      card.current.scrollIntoView();
+    } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
-    };
-  }, []);
+    }
+    return card.current;
+  });
 
   function renderIcon() {
     if (status === "Review") {
@@ -38,7 +39,11 @@ export default function Card({ data, active, closed }) {
   }
 
   return (
-    <div className="card-wrapper" ref={card}>
+    <div
+      className="card-wrapper"
+      ref={card}
+      onClick={() => handleCardClick(message)}
+    >
       <div className="card-pr-type">
         <div className="card-type-icon">{active ? <PRSec /> : <PRPri />}</div>
         <p

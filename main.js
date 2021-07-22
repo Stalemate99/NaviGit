@@ -6,8 +6,11 @@ const {
   Menu,
   globalShortcut,
   screen,
+  remote,
 } = require("electron");
 const path = require("path");
+const open = require("open");
+const { electron } = require("process");
 
 let mainWindow;
 let tray;
@@ -22,6 +25,9 @@ app.on("ready", () => {
     show: true,
     resizable: true,
     webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
       preload: path.join(__dirname, "preload.js"),
     },
   });
@@ -143,3 +149,10 @@ function toggleView() {
     mainWindow.show();
   }
 }
+
+// Handle IPC
+ipcMain.on("Enter", async (event, data) => {
+  console.log(data, "Inside Electron");
+  // await open("https://sindresorhus.com");
+  event.reply("Enter-reply", "Gotcha");
+});

@@ -10,19 +10,19 @@ import Org from "../../assets/Org.svg";
 import Branch from "../../assets/Branch.svg";
 import Individual from "../../assets/Host.svg";
 
-export default function RepoCard({ active, data }) {
+export default function RepoCard({ active, data, handleCardClick }) {
   const { name, source, source_name } = data;
-  const card = useRef();
+  const card = useRef(null);
 
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
+      card.current.scrollIntoView();
+    } else if (card.current && card.current.classList.contains("active") > -1) {
+      card.current.classList.remove("active");
     }
-    return () => {
-      card.current.classList.indexOf("active") > -1 &&
-        card.current.classList.remove("active");
-    };
-  }, []);
+    return card.current;
+  });
 
   function renderRepoSource(source) {
     if (source === "org") {
@@ -57,7 +57,11 @@ export default function RepoCard({ active, data }) {
   }
 
   return (
-    <div className="card-wrapper" ref={card}>
+    <div
+      className="card-wrapper"
+      ref={card}
+      onClick={() => handleCardClick(name)}
+    >
       <div className="card-type">{active ? <RepoSec /> : <RepoPri />}</div>
       <div className="card-content-repo">
         <p className="card-content-repo-name">{name}</p>

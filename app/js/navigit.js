@@ -1,9 +1,10 @@
 import parse from "parse-link-header";
 import parallel from "async-await-parallel";
 class Navigit {
-  constructor(git, store) {
+  constructor(git, store, authKey) {
     this.git = git;
     this.store = store;
+    this.authKey = authKey;
   }
   async fetchUserReposV2(page, since = undefined, response) {
     try {
@@ -18,7 +19,7 @@ class Navigit {
 
           payload = { page, per_page: 100 };
         }
-        response = await this.git.request("GET /user/repos", payload);
+        response = await this.git.req̦uest("GET /user/repos", payload);
       }
       console.log(response);
       const { data } = response;
@@ -141,14 +142,19 @@ class Navigit {
       });
 
       for (let item of response.data.items) {
+        const splitUrl = item.html_url.split("/");
+        const time = await this.eventTime(item.events_url, role);
         this.store[isIssue ? "issueSet" : "prSet"](item.id, {
           role,
           title: item.title,
           created: item.created_at,
           url: item.html_url,
+          repo: splitUrl[1] + splitUrl[2],
+          number: splitUrl[splitUrl.length - 1],
           events: item.events_url,
           id: item.id,
           state: item.state,
+          time: time,
         });
       }
       return true;
@@ -281,6 +287,29 @@ class Navigit {
       ]);
       console.timeEnd("Sync");
       return true;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async eventTime(url, role) {
+    try {
+      const event = await axios({
+        method: "get",
+        url: url,
+        headers: {
+          Authorization: `Bearer ${this.authKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const filteredObj = event.data
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .find((x) => x === role);
+      let time;
+      if (filteredObj) {
+        time = filteredObj.created_at;
+      }
+      return time;
     } catch (err) {
       throw err;
     }

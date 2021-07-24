@@ -60,6 +60,11 @@ class Store {
     }
   }
 
+  registerTime(isIssue, id, time) {
+    const access = isIssue ? "issues" : "pr";
+    this.data[access][id].time = time;
+  }
+
   markVisited(branch, key) {
     if (this.data[branch][key]) {
       this.data[branch][key].visited += 1;

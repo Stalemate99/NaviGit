@@ -151,8 +151,8 @@ function toggleView() {
 }
 
 // Handle IPC
-ipcMain.on("Enter", async (event, data) => {
+ipcMain.on("open-repo", async (event, data) => {
   console.log(data, "Inside Electron");
-  // await open("https://sindresorhus.com");
-  event.reply("Enter-reply", "Gotcha");
+  await open(data);
+  // event.reply("Enter-reply", "Gotcha");
 });

@@ -21,7 +21,7 @@ export default function RepoCard({ active, data, handleCardClick }) {
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }
-    return card.current;
+    // return card.current;
   });
 
   function renderRepoSource(source) {

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
-const { ipcRenderer } = window.require("electron");
+import { Octokit } from "@octokit/core";
+import Store from "../js/store";
+import Navigit from "../js/navigit";
+import moment from "moment";
 
 import Header from "../components/Header";
 import Nav from "../components/Nav";
@@ -8,87 +11,14 @@ import RepoCard from "../components/RepoCard";
 import PRCard from "../components/PRCard";
 import IssueCard from "../components/IssueCard";
 
-const repos = [
-  {
-    name: "addtocalendar-bower-packagedqweqweqweqweqwe",
-    source: "org",
-    source_name: "interviewstreet",
-  },
-  {
-    name: "addtocalendar-bower-package",
-    source: "org",
-    source_name: "interviewstreet",
-  },
-  {
-    name: "addtocalendar-bowers-package",
-    source: "org",
-    source_name: "interviewstreet",
-  },
-  {
-    name: "addtocalendar-bowr-package",
-    source: "org",
-    source_name: "interviewstreet",
-  },
-];
-const prs = [
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rail version 6 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-    number: 5,
-  },
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails version 6 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-    number: 5,
-  },
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails version 5 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-    number: 5,
-  },
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails version 6 upgrades",
-    status: "Assigned",
-    time: "2 days back",
-    number: 5,
-  },
-];
-
-const issues = [
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails versions 6 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-  },
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails version 1 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-  },
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails version 4 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-  },
-  {
-    repo_name: "interviewstreet / local_ops",
-    message: "Rails version 44 upgrade",
-    status: "Assigned",
-    time: "2 days back",
-  },
-];
+const { ipcRenderer } = window.require("electron");
 
 const tabs = ["Repos", "PRs", "Issues"];
+const store = new Store();
+const octo = new Octokit({
+  auth: JSON.parse(localStorage.getItem("signin")).authKey,
+});
+const navigit = new Navigit(octo, store);
 
 export default function Home() {
   const [active, setActive] = useState(tabs[0]);
@@ -106,11 +36,17 @@ export default function Home() {
 
   useEffect(() => {
     if (active === "Repos") {
+      const repos = store.getSorted("repos");
+      console.log(repos);
       setContent(repos);
     } else if (active === "PRs") {
+      const prs = store.getSorted("pr");
+      console.log(prs);
       setContent(prs);
     } else if (active === "Issues") {
-      setContent(issues);
+      // const issues = store.getSorted("issues");
+      // console.log(issues);
+      // setContent(issues);
     }
     setCursor(0);
     return () => {
@@ -135,9 +71,9 @@ export default function Home() {
       setActive(tabs[i]);
     } else if (e.code.includes("Arrow")) {
       if (e.code.includes("Left")) {
-        // setCursor((cursor - 1)%3)
+        ipcRenderer.send("open-repo", content[cursor].issues);
       } else if (e.code.includes("Right")) {
-        // setCursor((cursor + 1)%3)
+        ipcRenderer.send("open-repo", content[cursor].pr);
       } else if (e.code.includes("Up")) {
         var index = (cursor - 1) % content.length;
         if (cursor == 0) {
@@ -149,10 +85,10 @@ export default function Home() {
         setCursor(index);
       }
     } else if (e.code.includes("Enter")) {
-      ipcRenderer.send("Enter", content[cursor].name);
-      ipcRenderer.once("Enter-reply", (e, data) => {
-        console.log(data, "From Main Process");
-      });
+      ipcRenderer.send("open-repo", content[cursor].url);
+      // ipcRenderer.once("Enter-reply", (e, data) => {
+      //   console.log(data, "From Main Process");
+      // });
     }
   };
 
@@ -195,7 +131,12 @@ export default function Home() {
       );
     } else if (active === "Repos") {
       // Repos
-      return repos.map((repo, num) => {
+      return content.map((cont, num) => {
+        let repo = {
+          name: cont.name,
+          source: cont.isOwnedByUser ? "individual" : "org",
+          source_name: cont.ownedBy,
+        };
         return (
           <RepoCard
             data={repo}
@@ -214,19 +155,32 @@ export default function Home() {
       });
     } else if (active === "Issues") {
       // Issues
-      return issues.map((issue, num) => {
-        return (
-          <IssueCard
-            data={issue}
-            key={num}
-            active={cursor === num}
-            handleCardClick={handleClick}
-          />
-        );
-      });
+      // return issues.map((issue, num) => {
+      //   return (
+      //     <IssueCard
+      //       data={issue}
+      //       key={num}
+      //       active={cursor === num}
+      //       handleCardClick={handleClick}
+      //     />
+      //   );
+      // });
     } else if (active === "PRs") {
       // Prs
-      return prs.map((pr, num) => {
+      return content.map((cont, num) => {
+        let pr = {
+          number: cont.number,
+          message: cont.title,
+          status:
+            cont.role === "author"
+              ? "Opened"
+              : cont.role === "asignee"
+              ? "Assigned"
+              : "Review",
+          time: moment(cont.created).fromNow(),
+          repo_name: cont.repo,
+        };
+        // console.log(pr);
         return (
           <PRCard
             data={pr}

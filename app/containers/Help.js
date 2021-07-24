@@ -8,7 +8,7 @@ import RepoSec from "../../assets/RepoSec.svg";
 import IssueSec from "../../assets/IssueSec.svg";
 import { useHistory } from "react-router-dom";
 
-export default function Help() {
+export default function Help({ closeTour }) {
   const [page, setPage] = useState(1);
 
   const history = useHistory();
@@ -102,7 +102,7 @@ export default function Help() {
               type="Help"
               text="Aye Aye"
               active={true}
-              eventCall={() => history.push("/sync")}
+              eventCall={() => closeTour()}
             />
           </div>
         </div>

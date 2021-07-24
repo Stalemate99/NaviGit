@@ -757,7 +757,7 @@ p {
   width: 100vw;
   display: grid;
   grid-template-areas: "." "header" "sync_content" "sync_footer";
-  grid-template-rows: 150px 0fr 1fr 0.4fr;
+  grid-template-rows: 100px 0fr 1fr 0.4fr;
 }
 
 .sync-content {

@@ -5,6 +5,7 @@ import { Octokit } from "@octokit/core";
 import Store from "../js/store";
 import Navigit from "../js/navigit";
 
+import Help from "./Help";
 import Header from "../components/Header";
 import Button from "../components/Button";
 
@@ -12,6 +13,7 @@ export default function Sync() {
   const history = useHistory();
 
   const [sync, setSync] = useState(false);
+  const [help, setHelp] = useState(false);
 
   useEffect(async () => {
     let pat = JSON.parse(localStorage.getItem("signin")).authKey;
@@ -45,9 +47,31 @@ export default function Sync() {
       });
     }
     return () => {
+      console.log("In component unmount phase");
       localStorage.removeItem("sync");
     };
-  });
+  }, []);
+
+  useEffect(() => {}, [help]);
+
+  if (help) {
+    return (
+      <>
+        <ToastContainer
+          position="top-center"
+          autoClose={5000}
+          hideProgressBar
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
+        <Help closeTour={() => setHelp(false)} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -79,7 +103,7 @@ export default function Sync() {
               type="Tour"
               text="Start tour"
               active={true}
-              eventCall={() => history.push("/about")}
+              eventCall={() => setHelp(true)}
             />
           </div>
         </div>

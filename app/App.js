@@ -4,7 +4,6 @@ import { ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.min.css";
 
 import Home from "./containers/Home";
-import Help from "./containers/Help";
 import Preferences from "./containers/Preferences";
 import SignIn from "./containers/SignIn";
 import Sync from "./containers/Sync";
@@ -61,7 +60,6 @@ export default function App() {
         <Route path="/sync" component={Sync} />
         <Route path="/signin" component={SignIn} />
         <Route path="/preferences" component={Preferences} />
-        <Route path="/about" component={Help} />
         <Route exact path="/" component={Home} />
       </Switch>
     </>

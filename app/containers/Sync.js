@@ -20,32 +20,30 @@ export default function Sync() {
       auth: pat,
     });
     const navigit = new Navigit(octo, store);
-    setTimeout(async () => {
-      try {
-        await navigit.initialSetup();
-        localStorage.setItem("sync", true);
-        setSync(true);
-        toast.success("Sync successsful", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
-      } catch (err) {
-        toast.error("Unable to sync", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
-      }
-    }, 5000);
+    try {
+      await navigit.initialSetup();
+      localStorage.setItem("sync", true);
+      setSync(true);
+      toast.success("Sync successsful", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    } catch (err) {
+      toast.error("Unable to sync", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    }
     return () => {
       localStorage.removeItem("sync");
     };

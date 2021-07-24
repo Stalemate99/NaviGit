@@ -1,5 +1,5 @@
-import async from "async";
 import parse from "parse-link-header";
+import parallel from "async-await-parallel";
 class Navigit {
   constructor(git, store) {
     this.git = git;
@@ -38,46 +38,28 @@ class Navigit {
       throw e;
     }
   }
-  fetchUserRepos(page = 1, since = undefined) {
-    return new Promise(async (res, rej) => {
-      try {
-        let payload;
-        if (since) {
-          console.log("since caught", since);
-          payload = { page, per_page: 100, since };
-        } else {
-          console.log("since didnt come", since);
-          payload = { page, per_page: 100 };
+  async fetchUserRepos(page = 1, since = undefined) {
+    try {
+      const response = await this.git.request("GET /user/repos", {
+        page,
+        per_page: 100,
+        since,
+      });
+      const lastPage = checkLastPage(page, response);
+      await this.fetchUserReposV2(page, since, response);
+      if (lastPage != page) {
+        const self = this;
+        let tasks = [];
+        for (let i = page + 1; i <= lastPage; i += 1) {
+          tasks.push(async () => await self.fetchUserReposV2(i, since));
         }
-        const response = await this.git.request("GET /user/repos", payload);
-        console.log("got resp", response);
-        const lastPage = checkLastPage(page, response);
-        console.log("shit storm");
-        await this.fetchUserReposV2(page, since, response);
-        if (lastPage) {
-          const self = this;
-          let tasks = [];
-          for (let i = page + 1; i <= lastPage; i += 1) {
-            tasks.push(this.fetchUserReposV2.bind(self, i, since));
-          }
-          console.log("launching tasks", tasks.length);
-          async.parallel(tasks, (e, r) => {
-            console.log("all tasks done");
-            if (e) {
-              rej(e);
-              return;
-            }
-            res(this.store.src);
-            return;
-          });
-        } else {
-          res(this.store.src);
-          return;
-        }
-      } catch (e) {
-        rej(e);
+        await parallel(tasks);
+        return true;
       }
-    });
+      return true;
+    } catch (e) {
+      throw e;
+    }
   }
 
   async fetchUserOrgReposV2(org, page, response) {
@@ -95,7 +77,7 @@ class Navigit {
       for (let repo of data) {
         if (this.store.repoGet(repo.full_name)) {
           console.log("gottem", repo.full_name);
-          return true;
+          return false;
         }
         this.store.repoSet(repo.full_name, {
           name: repo.name,
@@ -123,15 +105,17 @@ class Navigit {
         per_page: 100,
       });
       const lastPage = checkLastPage(page, response);
-      await this.fetchUserOrgReposV2(org, page, response);
-      if (lastPage) {
+      const notRedundant = await this.fetchUserOrgReposV2(org, page, response);
+      let tasks = [];
+      if (lastPage !== page) {
         const self = this;
-        let tasks = [];
         for (let i = page + 1; i <= lastPage; i += 1) {
-          tasks.push(this.fetchUserOrgReposV2.bind(self, org, i));
+          tasks.push(async () => {
+            return await self.fetchUserOrgReposV2(org, i);
+          });
         }
-        await async.parallel(tasks);
-        console.log("fully filmy");
+        console.log(parallel);
+        await parallel(tasks);
         return true;
       }
       return true;
@@ -143,6 +127,9 @@ class Navigit {
   async fetchIssuesAndPr(page = 1, config) {
     try {
       let { role, username, isIssue } = config;
+      if (!isIssue) {
+        console.log("pr entry point");
+      }
       const response = await this.git.request("GET /search/issues", {
         q: `${role}:${username} is:open ${
           isIssue ? "is:issue" : "is:pull-request"
@@ -189,8 +176,10 @@ class Navigit {
       const { data } = await this.git.request("GET /user/orgs");
       const names = data.map((x) => x.login);
       if (names.length) {
-        await async.parallel(
-          names.map((x) => this.fetchOrgRepos.bind(self, x))
+        await parallel(
+          names.map((x) => async () => {
+            return await self.fetchOrgRepos(x);
+          })
         );
         console.log("userorgrepos synced");
         return true;
@@ -208,14 +197,15 @@ class Navigit {
       let tasks = [];
       for (let role of roles) {
         tasks.push(
-          this.fetchIssuesAndPr.bind(self, 1, {
-            role,
-            username: this.store.get("username"),
-            isIssue: true,
-          })
+          async () =>
+            await self.fetchIssuesAndPr(1, {
+              role,
+              username: self.store.get("username"),
+              isIssue: true,
+            })
         );
       }
-      await async.parallel(tasks);
+      await parallel(tasks);
       return true;
     } catch (e) {
       throw e;
@@ -229,15 +219,16 @@ class Navigit {
       const self = this;
       let tasks = [];
       for (let role of roles) {
-        tasks.push(
-          this.fetchIssuesAndPr.bind(self, 1, {
+        tasks.push(async () => {
+          await self.fetchIssuesAndPr(1, {
             role,
-            username: this.store.get("username"),
+            username: self.store.get("username"),
             isIssue: false,
-          })
-        );
+          });
+          return true;
+        });
       }
-      await async.parallel(tasks);
+      await parallel(tasks);
       return true;
     } catch (e) {
       throw e;
@@ -267,14 +258,28 @@ class Navigit {
   }
 
   async initialSetup() {
+    console.time("Sync");
     try {
       const self = this;
-      await async.parallel([
-        this.syncUserRepos.bind(self, undefined),
-        this.syncUserOrgRepos.bind(self, undefined),
-        this.syncIssues.bind(self, undefined),
-        this.syncPR.bind(self, undefined),
+      await parallel([
+        async function () {
+          await self.syncUserRepos();
+          return true;
+        },
+        async function () {
+          await self.syncUserOrgRepos();
+          return true;
+        },
+        async function () {
+          await self.syncIssues();
+          return true;
+        },
+        async function () {
+          await self.syncPR();
+          return true;
+        },
       ]);
+      console.timeEnd("Sync");
       return true;
     } catch (err) {
       throw err;

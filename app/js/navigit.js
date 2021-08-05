@@ -195,8 +195,9 @@ class Navigit {
     }
   }
 
-  async syncIssues() {
+  async syncIssues(notify) {
     this.store.set("lastSync", +new Date());
+    const lastCount = Object.keys()
     try {
       const roles = ["author", "assignee"];
       const self = this;

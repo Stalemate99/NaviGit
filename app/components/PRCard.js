@@ -13,7 +13,7 @@ import AssignedSec from "../../assets/IdSec.svg";
 import Pending from "../../assets/Pending.svg";
 
 export default function Card({ data, active, handleCardClick }) {
-  const { number, message, status, time, repo_name } = data;
+  const { number = 1, message, status, time, repo_name = "kq" } = data;
   const card = useRef();
 
   useEffect(() => {
@@ -23,11 +23,12 @@ export default function Card({ data, active, handleCardClick }) {
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }
-    return card.current;
+    // return card.current;
   });
 
   function renderIcon() {
     if (status === "Review") {
+      console.log("in pr review");
       return <>{active ? <PlusOneSec /> : <PlusOnePri />}</>;
     } else if (status === "Assigned") {
       return <>{active ? <AssignedSec /> : <AssignedPri />}</>;

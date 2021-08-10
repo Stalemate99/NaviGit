@@ -4,6 +4,7 @@ import { Octokit } from "@octokit/core";
 import Store from "../js/store";
 import Navigit from "../js/navigit";
 import moment from "moment";
+import Fuse from 'fuse.js'
 
 import Header from "../components/Header";
 import Nav from "../components/Nav";
@@ -15,16 +16,23 @@ const { ipcRenderer } = window.require("electron");
 
 const tabs = ["Repos", "PRs", "Issues"];
 const store = new Store();
+
+
+
+
+let pat = JSON.parse(localStorage.getItem("signin")).authKey;
 const octo = new Octokit({
-  auth: JSON.parse(localStorage.getItem("signin")).authKey,
+  auth: pat,
 });
-const navigit = new Navigit(octo, store);
+const navigit = new Navigit(octo, store, pat);
 
 export default function Home() {
   const [active, setActive] = useState(tabs[0]);
   const [content, setContent] = useState([]);
   const [cursor, setCursor] = useState(0);
   const [text, setText] = useState("");
+  const [filteredContent, setFilteredContent] = useState([]);
+  const [isInitialText, setIsInitialText] = useState(true);
 
   useEffect(() => {
     // Listening for keypress
@@ -44,9 +52,9 @@ export default function Home() {
       console.log(prs);
       setContent(prs);
     } else if (active === "Issues") {
-      // const issues = store.getSorted("issues");
-      // console.log(issues);
-      // setContent(issues);
+      const issues = store.getSorted("issues");
+      console.log(issues);
+      setContent(issues);
     }
     setCursor(0);
     return () => {
@@ -58,10 +66,86 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       // Insert API calls
-    }, 1000);
+      if(isInitialText){
+        setIsInitialText(false)
+      }else{
+        filterContent()
+      }
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [text]);
+
+  useEffect(() => {
+    console.log(content)
+      filterContent()
+  }, [content]);
+
+  // useEffect(() => {
+  //   const interval = setInterval(async () => {
+  //     const result = await navigit.syncIssues()
+  //     if(result) {
+  //       console.log("issues fetched bro")
+  //       if (active === "Issues") {
+  //         const issues = store.getSorted("issues");
+  //         setContent(issues)
+  //       }
+  //     }
+  //   }, 5000)
+
+  //   return () => clearInterval(interval)
+  // })
+
+  // useEffect(() => {
+  //   const interval = setInterval(async () => {
+  //     const result = await navigit.syncPR()
+  //     if(result) {
+  //       console.log("PRs fetched bro")
+  //       if (active === "PRs") {
+  //         const prs = store.getSorted("pr");
+  //         setContent(prs)
+  //       }
+  //     }
+  //   }, 5000)
+
+  //   return () => clearInterval(interval)
+  // })
+
+  const filterContent = () => {
+    if(text!=""){
+      let keys = []
+      if (active === "Repos") {
+        keys = [
+          "name",
+          "ownedBy"
+        ]
+      } else if (active === "PRs") {
+        keys = [
+          "repo",
+        ]
+      } else if (active === "Issues") {
+        keys = [
+          "repo",
+        ]
+      }
+      const options = {
+        keys
+      };
+      const fuse = new Fuse(content, options);
+      // Change the pattern
+      const pattern = text
+      const data = fuse.search(pattern).map((val) => {
+        return val['item']
+      })
+      setFilteredContent(data)
+      if(data.length>0){
+        setCursor(0)
+      }
+    }else{
+      setFilteredContent(content)
+    }
+  }
+
 
   const handleKeyPress = async (e) => {
     if (e.code === "Tab") {
@@ -71,21 +155,21 @@ export default function Home() {
       setActive(tabs[i]);
     } else if (e.code.includes("Arrow")) {
       if (e.code.includes("Left")) {
-        ipcRenderer.send("open-repo", content[cursor].issues);
+        ipcRenderer.send("open-repo", filteredContent[cursor].issues);
       } else if (e.code.includes("Right")) {
-        ipcRenderer.send("open-repo", content[cursor].pr);
+        ipcRenderer.send("open-repo", filteredContent[cursor].pr);
       } else if (e.code.includes("Up")) {
-        var index = (cursor - 1) % content.length;
+        var index = (cursor - 1) % filteredContent.length;
         if (cursor == 0) {
-          index = content.length - 1;
+          index = filteredContent.length - 1;
         }
         setCursor(index);
       } else {
-        var index = (cursor + 1) % content.length;
+        var index = (cursor + 1) % filteredContent.length;
         setCursor(index);
       }
     } else if (e.code.includes("Enter")) {
-      ipcRenderer.send("open-repo", content[cursor].url);
+      ipcRenderer.send("open-repo", filteredContent[cursor].url);
       // ipcRenderer.once("Enter-reply", (e, data) => {
       //   console.log(data, "From Main Process");
       // });
@@ -112,7 +196,7 @@ export default function Home() {
 
   const renderCards = () => {
     // No content
-    if (content.length == 0) {
+    if (content.length == 100) {
       return (
         <div className="home-nocontent-wrapper">
           <p>We couldn't fetch you the required data</p>
@@ -131,7 +215,7 @@ export default function Home() {
       );
     } else if (active === "Repos") {
       // Repos
-      return content.map((cont, num) => {
+      return filteredContent.map((cont, num) => {
         let repo = {
           name: cont.name,
           source: cont.isOwnedByUser ? "individual" : "org",
@@ -144,30 +228,51 @@ export default function Home() {
             active={cursor === num}
             handleCardClick={(name) => {
               setCursor(
-                content.reduce((cur, cont) => {
-                  if (cont.name === name) cur = content.indexOf(cont);
-                  return cur;
-                }, 0)
+                // content.reduce((cur, cont) => {
+                //   if (cont.name === name) cur = content.indexOf(cont);
+                //   return cur;
+                // }, 0)
+                num
               );
             }}
           />
         );
       });
     } else if (active === "Issues") {
-      // Issues
-      // return issues.map((issue, num) => {
-      //   return (
-      //     <IssueCard
-      //       data={issue}
-      //       key={num}
-      //       active={cursor === num}
-      //       handleCardClick={handleClick}
-      //     />
-      //   );
-      // });
+      //Issues
+      console.log(content)
+      return filteredContent.map((cont, num)=>{
+        let issue = {
+          message: cont.title,
+          status: cont.role === "author"
+          ? "Opened"
+          : cont.role === "assignee"
+          ? "Assigned"
+          : "Review",
+          time: moment(cont.time).fromNow(),
+          repo_name: cont.repo,
+        }
+        return (
+          <IssueCard
+            data={issue}
+            key={num}
+            active={cursor === num}
+            handleCardClick={(msg) => {
+              setCursor(
+                // content.reduce((cur, cont) => {
+                //   if (cont.message === msg) cur = content.indexOf(cont);
+                //   return cur;
+                // }, 0)
+                num
+              );
+            }}
+          />
+        );
+      })
+      
     } else if (active === "PRs") {
       // Prs
-      return content.map((cont, num) => {
+      return filteredContent.map((cont, num) => {
         let pr = {
           number: cont.number,
           message: cont.title,
@@ -177,7 +282,7 @@ export default function Home() {
               : cont.role === "asignee"
               ? "Assigned"
               : "Review",
-          time: moment(cont.created).fromNow(),
+          time: moment(cont.time).fromNow(),
           repo_name: cont.repo,
         };
         // console.log(pr);
@@ -188,10 +293,11 @@ export default function Home() {
             active={cursor === num}
             handleCardClick={(msg) => {
               setCursor(
-                content.reduce((cur, cont) => {
-                  if (cont.message === msg) cur = content.indexOf(cont);
-                  return cur;
-                }, 0)
+                // content.reduce((cur, cont) => {
+                //   if (cont.message === msg) cur = content.indexOf(cont);
+                //   return cur;
+                // }, 0)
+                num
               );
             }}
           />

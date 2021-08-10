@@ -15,15 +15,18 @@ export default function Sync() {
   const [sync, setSync] = useState(false);
   const [help, setHelp] = useState(false);
 
-  useEffect(async () => {
+  useEffect(() => {
+    (async () => {
     let pat = JSON.parse(localStorage.getItem("signin")).authKey;
     const store = new Store();
     const octo = new Octokit({
       auth: pat,
     });
-    const navigit = new Navigit(octo, store);
+    const navigit = new Navigit(octo, store, pat);
     try {
+      console.log("entered")
       await navigit.initialSetup();
+      console.log("crossed")
       localStorage.setItem("sync", true);
       setSync(true);
       toast.success("Sync successsful", {
@@ -36,6 +39,7 @@ export default function Sync() {
         progress: undefined,
       });
     } catch (err) {
+      console.log(err)
       toast.error("Unable to sync", {
         position: "top-center",
         autoClose: 5000,
@@ -46,11 +50,13 @@ export default function Sync() {
         progress: undefined,
       });
     }
-    return () => {
-      console.log("In component unmount phase");
-      localStorage.removeItem("sync");
-    };
-  }, []);
+  })();
+  return () => {
+    console.log("In component unmount phase");
+    // localStorage.removeItem("sync");
+  };
+
+}, []);
 
   useEffect(() => {}, [help]);
 

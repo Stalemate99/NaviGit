@@ -16,14 +16,15 @@ export default function Card({ data, active, handleCardClick }) {
   const { message, status, time, repo_name } = data;
   const card = useRef();
 
+  
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
-      // card.current.scrollIntoView();
+      card.current.scrollIntoView();
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }
-    return card.current;
+    // return card.current;
   });
 
   function renderIcon() {

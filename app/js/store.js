@@ -7,6 +7,7 @@ class Store {
     const userDataPath = remote.app.getPath("userData");
     opts.defaults = { username: null, repos: {}, issues: {}, pr: {} };
     this.path = path.join(userDataPath, "pref.json");
+    console.log(this.path);
     this.data = parseDataFile(this.path, opts.defaults);
   }
 
@@ -30,19 +31,16 @@ class Store {
   repoSet(key, value) {
     this.data["repos"][key] = value;
     this.registerVisited(this.data["repos"], key);
-    this.sync();
   }
 
   issueSet(key, value) {
     this.data["issues"][key] = value;
     this.registerVisited(this.data["issues"], key);
-    this.sync();
   }
 
   prSet(key, value) {
     this.data["pr"][key] = value;
     this.registerVisited(this.data["pr"], key);
-    this.sync();
   }
 
   issueGet(key) {
@@ -76,8 +74,26 @@ class Store {
     this.sync();
   }
 
-  sync() {
+  sync(localDump, name) {
+    if(localDump){
+      this.data[name] = {}
+      if(name=="repos"){
+        Object.keys(localDump["repos"]).forEach((key)=>{
+          this.repoSet(key, localDump["repos"][key])
+        })  
+      } else if (name=="pr"){
+        Object.keys(localDump["pr"]).forEach((key)=>{
+          this.prSet(key, localDump["pr"][key])
+        })
+      }else if (name == "issues"){
+        Object.keys(localDump["issues"]).forEach((key)=>{
+          this.issueSet(key, localDump["issues"][key])
+        });
+      }
+    }
+   
     fs.writeFileSync(this.path, JSON.stringify(this.data));
+    return true;
   }
   get src() {
     return this.data;

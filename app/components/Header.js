@@ -4,7 +4,7 @@ import { useHistory } from "react-router-dom";
 import Logo from "../../assets/Logo.svg";
 import LogoL from "../../assets/LogoL.svg";
 import NaviGit from "../../assets/Navi-Git.svg";
-import NaviGitL from "../../assets/Navi-Git-L.svg";
+import NaviGitL from "../../assets/Navi-Git.svg";
 import Settings from "../../assets/Cog.svg";
 import LogoSpin from "../../assets/LogoSpin.svg";
 
@@ -19,7 +19,9 @@ export default function Header({ settings, from, sync = false }) {
   return (
     <div className={settings ? "header-large" : "header"}>
       <div className="logo">{settings ? renderLogo() : <LogoL />}</div>
-      <div className="title">{settings ? <NaviGit /> : <NaviGitL />}</div>
+      <div className="title" styles={{
+        width : '20%'
+      }}>{settings ? <NaviGit /> : <NaviGitL />}</div>
       <div className="settings">
         {settings && (
           <div

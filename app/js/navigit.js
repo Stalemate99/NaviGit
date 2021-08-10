@@ -1,11 +1,27 @@
 import parse from "parse-link-header";
 import parallel from "async-await-parallel";
+import axios from 'axios';
 class Navigit {
   constructor(git, store, authKey) {
     this.git = git;
     this.store = store;
     this.authKey = authKey;
+    this.localDump = {"repos":{},"pr":{},"issues":{}};
   }
+
+  repoSet(key,value){
+  this.localDump["repos"][key]= value; 
+  }
+
+  prSet(key,value){
+    this.localDump["pr"][key]= value; 
+  }
+
+  issueSet(key,value ){
+    this.localDump["issues"][key]= value; 
+  }
+
+
   async fetchUserReposV2(page, since = undefined, response) {
     try {
       if (!response) {
@@ -19,12 +35,12 @@ class Navigit {
 
           payload = { page, per_page: 100 };
         }
-        response = await this.git.req̦uest("GET /user/repos", payload);
+        response = await this.git.request("GET /user/repos", payload);
       }
       console.log(response);
       const { data } = response;
       for (let repo of data) {
-        this.store.repoSet(repo.full_name, {
+        this.repoSet(repo.full_name, {
           name: repo.name,
           isOwnedByUser: repo.owner.type === "Organization" ? false : true,
           url: repo.html_url,
@@ -39,14 +55,17 @@ class Navigit {
       throw e;
     }
   }
+
   async fetchUserRepos(page = 1, since = undefined) {
     try {
+      console.log("random test", this.git)
       const response = await this.git.request("GET /user/repos", {
         page,
         per_page: 100,
         since,
       });
       const lastPage = checkLastPage(page, response);
+      console.log("last page", lastPage)
       await this.fetchUserReposV2(page, since, response);
       if (lastPage != page) {
         const self = this;
@@ -144,18 +163,23 @@ class Navigit {
       for (let item of response.data.items) {
         const splitUrl = item.html_url.split("/");
         const time = await this.eventTime(item.events_url, role);
-        this.store[isIssue ? "issueSet" : "prSet"](item.id, {
+        const payload = {
           role,
           title: item.title,
           created: item.created_at,
           url: item.html_url,
-          repo: splitUrl[1] + splitUrl[2],
+          repo: splitUrl[3] +"/"+ splitUrl[4],
           number: splitUrl[splitUrl.length - 1],
           events: item.events_url,
           id: item.id,
           state: item.state,
-          time: time,
-        });
+          time: time || item.created_at,
+        }
+        if(isIssue){
+          this.issueSet(item.id,payload);
+        }else{
+          this.prSet(item.id,payload);
+        }
       }
       return true;
     } catch (e) {
@@ -195,9 +219,23 @@ class Navigit {
     }
   }
 
-  async syncIssues(notify) {
+  async syncRepos(since = undefined){
+    try{
+      await this.syncUserRepos(since);
+      await this.syncUserOrgRepos();
+      this.store.sync(this.localDump,"repos");
+      this.localDump["repos"] = {};
+      return true;
+    }catch(e){
+      this.localDump["repos"] = {};
+      throw e;
+    }
+  }
+
+  async syncIssues() {
+    console.log("enters syncIssues")
     this.store.set("lastSync", +new Date());
-    const lastCount = Object.keys()
+    console.log("store set")
     try {
       const roles = ["author", "assignee"];
       const self = this;
@@ -212,9 +250,13 @@ class Navigit {
             })
         );
       }
+      console.log("outside for")
       await parallel(tasks);
+      this.store.sync(this.localDump,"issues");
+      this.localDump["issues"] = {};
       return true;
     } catch (e) {
+      this.localDump["issues"] = {};
       throw e;
     }
   }
@@ -222,6 +264,7 @@ class Navigit {
   async syncPR() {
     this.store.set("lastSync", +new Date());
     try {
+
       const roles = ["author", "review-requested", "assignee"];
       const self = this;
       let tasks = [];
@@ -236,8 +279,11 @@ class Navigit {
         });
       }
       await parallel(tasks);
+      this.store.sync(this.localDump,"pr");
+      this.localDump["pr"] = {};
       return true;
     } catch (e) {
+      this.localDump["pr"] = {};
       throw e;
     }
   }
@@ -270,11 +316,7 @@ class Navigit {
       const self = this;
       await parallel([
         async function () {
-          await self.syncUserRepos();
-          return true;
-        },
-        async function () {
-          await self.syncUserOrgRepos();
+          await self.syncRepos();
           return true;
         },
         async function () {
@@ -303,13 +345,15 @@ class Navigit {
           "Content-Type": "application/json",
         },
       });
+      console.log("event", event)
       const filteredObj = event.data
-        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .find((x) => x === role);
       let time;
       if (filteredObj) {
         time = filteredObj.created_at;
       }
+      console.log("time", time)
       return time;
     } catch (err) {
       throw err;

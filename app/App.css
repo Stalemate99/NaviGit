@@ -64,7 +64,7 @@ input::-webkit-selection {
 
 .title {
   grid-area: title;
-  justify-self: right;
+  justify-self: center;
 }
 
 .settings {

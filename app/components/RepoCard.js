@@ -10,14 +10,14 @@ import Org from "../../assets/Org.svg";
 import Branch from "../../assets/Branch.svg";
 import Individual from "../../assets/Host.svg";
 
-export default function RepoCard({ active, data, handleCardClick }) {
+export default function RepoCard({ active, data, handleCardClick, isStatic = false }) {
   const { name, source, source_name } = data;
   const card = useRef(null);
 
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
-      card.current.scrollIntoView();
+      if(!isStatic) card.current.scrollIntoView();
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }
@@ -61,6 +61,11 @@ export default function RepoCard({ active, data, handleCardClick }) {
       className="card-wrapper"
       ref={card}
       onClick={() => handleCardClick(name)}
+      style={
+        isStatic? {
+          background:'none'
+        }: {}
+      }
     >
       <div className="card-type">{active ? <RepoSec /> : <RepoPri />}</div>
       <div className="card-content-repo">

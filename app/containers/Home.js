@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { Octokit } from "@octokit/core";
 import Store from "../js/store";
@@ -9,16 +9,15 @@ import Fuse from 'fuse.js'
 import Header from "../components/Header";
 import Nav from "../components/Nav";
 import RepoCard from "../components/RepoCard";
+import BranchCard from "../components/BranchCard";
 import PRCard from "../components/PRCard";
 import IssueCard from "../components/IssueCard";
+
 
 const { ipcRenderer } = window.require("electron");
 
 const tabs = ["Repos", "PRs", "Issues"];
 const store = new Store();
-
-
-
 
 let pat = JSON.parse(localStorage.getItem("signin")).authKey;
 const octo = new Octokit({
@@ -33,6 +32,12 @@ export default function Home() {
   const [text, setText] = useState("");
   const [filteredContent, setFilteredContent] = useState([]);
   const [isInitialText, setIsInitialText] = useState(true);
+  const [isLoading, setIsLoading] = useState(true)
+  const [includeSearchResult, setIncludeSearchResult] = useState(0)
+  const [showBranches, setShowBranches] = useState(false)
+  const [branchCursor, setBranchCursor] = useState(0)
+  const [branches, setBranches] = useState([])
+  const inputRef = useRef(null);
 
   useEffect(() => {
     // Listening for keypress
@@ -55,7 +60,7 @@ export default function Home() {
       const issues = store.getSorted("issues");
       console.log(issues);
       setContent(issues);
-    }
+    } 
     setCursor(0);
     return () => {
       setContent([]);
@@ -65,19 +70,43 @@ export default function Home() {
   // Debouncing text box
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Insert API calls
       if(isInitialText){
         setIsInitialText(false)
+      } else if(text.includes(':')){
+        if (!showBranches) setShowBranches(true)
+        fetchBranches(filteredContent[cursor].ownedBy, filteredContent[cursor].name);
       }else{
+        if (showBranches) setShowBranches(false)
         filterContent()
       }
-    }, 500);
+    }, 100);
 
     return () => clearTimeout(timer);
   }, [text]);
 
   useEffect(() => {
-    console.log(content)
+    if(!includeSearchResult || active!="Repos" || text==="") return
+    console.log("enters include search use effect")
+    const timer = setTimeout(() => {
+        (async () => {
+          const searchText = text
+          console.log("made a call bro with". searchText)
+          const result = await navigit.search(searchText);
+          if(inputRef.current.value===searchText){
+            const data = [
+              ...filteredContent,
+              ...result
+            ]
+            setFilteredContent(data)
+          }
+        })()
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [includeSearchResult]);
+
+  useEffect(() => {
+    console.log("gonna filter content cause of content change")
       filterContent()
   }, [content]);
 
@@ -122,14 +151,17 @@ export default function Home() {
       } else if (active === "PRs") {
         keys = [
           "repo",
+          "title"
         ]
       } else if (active === "Issues") {
         keys = [
           "repo",
+          "title"
         ]
       }
       const options = {
-        keys
+        keys,
+        threshold : 0.1
       };
       const fuse = new Fuse(content, options);
       // Change the pattern
@@ -141,10 +173,19 @@ export default function Home() {
       if(data.length>0){
         setCursor(0)
       }
+      console.log("gonna set include search result to true", includeSearchResult)
+      setIncludeSearchResult(includeSearchResult+1)
     }else{
       setFilteredContent(content)
     }
+    setIsLoading(false);
   }
+
+  const fetchBranches = async (ownedBy, name) => {
+    console.log("fetch branches of", ownedBy, name)
+    const result = await navigit.searchBranches(ownedBy, name)
+    setBranches(result)
+    }
 
 
   const handleKeyPress = async (e) => {
@@ -152,12 +193,17 @@ export default function Home() {
       e.preventDefault();
       var i = tabs.indexOf(active);
       i = (i + 1) % 3;
+      setIsLoading(true);
       setActive(tabs[i]);
     } else if (e.code.includes("Arrow")) {
       if (e.code.includes("Left")) {
         ipcRenderer.send("open-repo", filteredContent[cursor].issues);
+        markVisited()
+
       } else if (e.code.includes("Right")) {
         ipcRenderer.send("open-repo", filteredContent[cursor].pr);
+        markVisited()
+
       } else if (e.code.includes("Up")) {
         var index = (cursor - 1) % filteredContent.length;
         if (cursor == 0) {
@@ -169,6 +215,7 @@ export default function Home() {
         setCursor(index);
       }
     } else if (e.code.includes("Enter")) {
+      markVisited()
       ipcRenderer.send("open-repo", filteredContent[cursor].url);
       // ipcRenderer.once("Enter-reply", (e, data) => {
       //   console.log(data, "From Main Process");
@@ -194,9 +241,17 @@ export default function Home() {
     );
   }
 
+  const markVisited = () => {
+    console.log("inside markvisited", filteredContent[cursor])
+    if(filteredContent[cursor].key){
+      const branch = active === "Repos" ? "repos" : active == "PRs" ? "pr" : "issues"
+      store.markVisited(branch, filteredContent[cursor].key)
+    }
+  }
+
   const renderCards = () => {
     // No content
-    if (content.length == 100) {
+    if (isLoading || content.length == 100) {
       return (
         <div className="home-nocontent-wrapper">
           <p>We couldn't fetch you the required data</p>
@@ -213,7 +268,21 @@ export default function Home() {
           </p>
         </div>
       );
-    } else if (active === "Repos") {
+    } else if (active==="Repos" & showBranches){
+      return branches.map((branchName, num) => {
+        return (
+          <BranchCard
+            branchName={branchName}
+            key={num}
+            active={branchCursor == num}
+            handleCardClick={()=>{
+              setBranchCursor(num)
+            }
+            }
+          />      
+        );
+      })
+    }else if (active === "Repos") {
       // Repos
       return filteredContent.map((cont, num) => {
         let repo = {
@@ -306,6 +375,26 @@ export default function Home() {
     }
   };
 
+  const renderBranchRespository = () => {
+    console.log('branch repo', filteredContent, cursor)
+    if(filteredContent[cursor] && showBranches){
+      return (
+        <RepoCard className="home-selected-repo"
+            data={{
+              name: filteredContent[cursor].name,
+              source: filteredContent[cursor].isOwnedByUser ? "individual" : "org",
+              source_name: filteredContent[cursor].ownedBy,
+            }}
+            active={true}
+            isStatic={true}
+            handleCardClick={() => {}}
+          />
+      )
+    }else{
+      return (<></>)
+    }
+  }
+
   return (
     <>
       <ToastContainer
@@ -322,10 +411,15 @@ export default function Home() {
       <div className="home-container">
         <Header settings={true} from="/" />
         <div className="home-nav">
-          <Nav currentTab={(tab) => setActive(tab)} keyUpdate={active} />
+          <Nav currentTab={
+            (tab) => {
+            setActive(tab)
+            setIsLoading(true)
+            }
+            } keyUpdate={active} />
         </div>
         <div className="home-input-wrapper">
-          <input
+          <input ref={inputRef}
             type="text"
             className="home-input"
             placeholder="Type and search private and public repos"
@@ -334,6 +428,7 @@ export default function Home() {
             autoFocus={true}
           />
         </div>
+        {renderBranchRespository()}
         <div className="home-list">{renderCards()}</div>
       </div>
     </>

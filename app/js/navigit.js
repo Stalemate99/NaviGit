@@ -46,6 +46,7 @@ class Navigit {
           url: repo.html_url,
           ownedBy: repo.full_name.split("/")[0],
           pr: `${repo.html_url}/pulls`,
+          key:repo.full_name,
           private: repo.private,
           issues: `${repo.html_url}/issues`,
         });
@@ -55,6 +56,8 @@ class Navigit {
       throw e;
     }
   }
+
+  
 
   async fetchUserRepos(page = 1, since = undefined) {
     try {
@@ -104,6 +107,7 @@ class Navigit {
           isOwnedByUser: repo.owner.type === "Organization" ? false : true,
           url: repo.html_url,
           ownedBy: repo.full_name.split("/")[0],
+          key:repo.full_name,
           pr: `${repo.html_url}/pulls`,
           private: repo.private,
           issues: `${repo.html_url}/issues`,
@@ -167,6 +171,7 @@ class Navigit {
           role,
           title: item.title,
           created: item.created_at,
+          key:item.id,
           url: item.html_url,
           repo: splitUrl[3] +"/"+ splitUrl[4],
           number: splitUrl[splitUrl.length - 1],
@@ -360,6 +365,25 @@ class Navigit {
     }
   }
 
+   
+  async searchBranches(owner, repo) {
+    const response = await this.git.request("GET /repos/{owner}/{repo}/branches", {
+      owner: owner,
+      repo: repo,
+      per_page: 100,
+    });
+    const result = response.data.map((x) => x.name);
+    const index = result.findIndex((x)=> x === "master"|| x=== "main" );
+    console.log("loookouttt****")
+    console.log(index);
+    if(~index){
+      result.unshift(result[index]);
+      result.splice(index+1,1);
+      console.log(result);
+    }
+    return result;
+  }
+
   async search(term) {
     const res = await this.git.request("GET /search/repositories", {
       q: `${term} in:name`,
@@ -375,7 +399,10 @@ class Navigit {
       issues: `${repo.html_url}/issues`,
     }));
   }
+
+  
 }
+
 
 function checkLastPage(page, response) {
   link: '<https://api.github.com/search/issues?q=author%3Amohanpierce99+is%3Apull-request&per_page=30&page=2>; rel="next", <https://api.github.com/search/issues?q=author%3Amohanpierce99+is%3Apull-request&per_page=30&page=2>; rel="last"';

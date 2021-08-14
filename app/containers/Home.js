@@ -48,17 +48,17 @@ export default function Home() {
   });
 
   useEffect(() => {
+
+    clearBranches()
+
     if (active === "Repos") {
       const repos = store.getSorted("repos");
-      console.log(repos);
       setContent(repos);
     } else if (active === "PRs") {
       const prs = store.getSorted("pr");
-      console.log(prs);
       setContent(prs);
     } else if (active === "Issues") {
       const issues = store.getSorted("issues");
-      console.log(issues);
       setContent(issues);
     } 
     setCursor(0);
@@ -72,9 +72,13 @@ export default function Home() {
     const timer = setTimeout(() => {
       if(isInitialText){
         setIsInitialText(false)
-      } else if(text.includes(':')){
-        if (!showBranches) setShowBranches(true)
-        fetchBranches(filteredContent[cursor].ownedBy, filteredContent[cursor].name);
+      } else if( active==="Repos" && text.includes(':')){
+        if (!showBranches) {
+          setShowBranches(true)
+          setBranches([])
+          fetchBranches(filteredContent[cursor].ownedBy, filteredContent[cursor].name);
+          setBranchCursor(0)
+        }
       }else{
         if (showBranches) setShowBranches(false)
         filterContent()
@@ -90,7 +94,6 @@ export default function Home() {
     const timer = setTimeout(() => {
         (async () => {
           const searchText = text
-          console.log("made a call bro with". searchText)
           const result = await navigit.search(searchText);
           if(inputRef.current.value===searchText){
             const data = [
@@ -106,7 +109,6 @@ export default function Home() {
   }, [includeSearchResult]);
 
   useEffect(() => {
-    console.log("gonna filter content cause of content change")
       filterContent()
   }, [content]);
 
@@ -182,10 +184,15 @@ export default function Home() {
   }
 
   const fetchBranches = async (ownedBy, name) => {
-    console.log("fetch branches of", ownedBy, name)
     const result = await navigit.searchBranches(ownedBy, name)
     setBranches(result)
     }
+
+  const clearBranches = async () => {
+    setShowBranches(false)
+    const textArr = text.split(":")
+    setText(textArr[0])
+  }
 
 
   const handleKeyPress = async (e) => {
@@ -201,22 +208,40 @@ export default function Home() {
         markVisited()
 
       } else if (e.code.includes("Right")) {
-        ipcRenderer.send("open-repo", filteredContent[cursor].pr);
+        if(showBranches){
+          ipcRenderer.send("open-repo", `${filteredContent[cursor].url}/tree/${branches[branchCursor]}`);
+        }else{
+          ipcRenderer.send("open-repo", filteredContent[cursor].pr);
+        }
         markVisited()
 
       } else if (e.code.includes("Up")) {
-        var index = (cursor - 1) % filteredContent.length;
-        if (cursor == 0) {
-          index = filteredContent.length - 1;
+        e.preventDefault()
+        if(showBranches){
+          var index = branchCursor == 0 ? branches.length - 1 : (branchCursor - 1) % branches.length;
+          setBranchCursor(index);
+        }else{
+          var index = cursor == 0 ? filteredContent.length - 1 : (cursor - 1) % filteredContent.length;
+          setCursor(index);
         }
-        setCursor(index);
+        
       } else {
-        var index = (cursor + 1) % filteredContent.length;
-        setCursor(index);
+
+        if(showBranches){
+          var index = (branchCursor + 1) % branches.length;
+          setBranchCursor(index);
+        }else{
+          var index = (cursor + 1) % filteredContent.length;
+          setCursor(index);
+        }
       }
     } else if (e.code.includes("Enter")) {
       markVisited()
+      if(showBranches){
+        ipcRenderer.send("open-repo", `${filteredContent[cursor].url}/tree/${branches[branchCursor]}`);
+      }else{
       ipcRenderer.send("open-repo", filteredContent[cursor].url);
+      }
       // ipcRenderer.once("Enter-reply", (e, data) => {
       //   console.log(data, "From Main Process");
       // });
@@ -376,7 +401,6 @@ export default function Home() {
   };
 
   const renderBranchRespository = () => {
-    console.log('branch repo', filteredContent, cursor)
     if(filteredContent[cursor] && showBranches){
       return (
         <RepoCard className="home-selected-repo"
@@ -424,7 +448,9 @@ export default function Home() {
             className="home-input"
             placeholder="Type and search private and public repos"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              console.log(e)
+              setText(e.target.value)}}
             autoFocus={true}
           />
         </div>

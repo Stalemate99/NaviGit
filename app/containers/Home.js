@@ -4,7 +4,7 @@ import { Octokit } from "@octokit/core";
 import Store from "../js/store";
 import Navigit from "../js/navigit";
 import moment from "moment";
-import Fuse from 'fuse.js'
+import Fuse from "fuse.js";
 
 import Header from "../components/Header";
 import Nav from "../components/Nav";
@@ -14,7 +14,6 @@ import PRCard from "../components/PRCard";
 import IssueCard from "../components/IssueCard";
 import PublicResultsHeader from "../components/PublicResultsHeader";
 import Loader from "../components/Loader";
-
 
 const { ipcRenderer } = window.require("electron");
 
@@ -40,6 +39,14 @@ export default function Home() {
   const [showBranches, setShowBranches] = useState(false)
   const [branchCursor, setBranchCursor] = useState(0)
   const [branches, setBranches] = useState([])
+  const [isLoading, setIsLoading] = useState(true);
+  const [includeSearchResult, setIncludeSearchResult] = useState(0);
+  const [showBranches, setShowBranches] = useState(false);
+  const [branchCursor, setBranchCursor] = useState(0);
+  const [branches, setBranches] = useState([]);
+  const [issue, setIssue] = useState(0);
+  const [repo, setRepo] = useState(0);
+  const [pr, setPr] = useState(0);
   const inputRef = useRef(null);
 
   const [includeSearchResult, setIncludeSearchResult] = useState(0)
@@ -54,8 +61,7 @@ export default function Home() {
   });
 
   useEffect(() => {
-
-    clearBranches()
+    clearBranches();
 
     if (active === "Repos") {
       const repos = store.getSorted("repos");
@@ -66,7 +72,7 @@ export default function Home() {
     } else if (active === "Issues") {
       const issues = store.getSorted("issues");
       setContent(issues);
-    } 
+    }
     setCursor(0);
     return () => {
       setContent([]);
@@ -76,9 +82,9 @@ export default function Home() {
   // Debouncing text box
   useEffect(() => {
     const timer = setTimeout(() => {
-      if(isInitialText){
-        setIsInitialText(false)
-      } else if( active==="Repos" && text.includes(':')){
+      if (isInitialText) {
+        setIsInitialText(false);
+      } else if (active === "Repos" && text.includes(":")) {
         if (!showBranches) {
           setShowBranches(true)
           if (branches.length > 0) setBranches([])
@@ -127,38 +133,40 @@ export default function Home() {
   }, [includeSearchResult]);
 
   useEffect(() => {
-      filterContent()
+    filterContent();
   }, [content]);
 
-  // useEffect(() => {
-  //   const interval = setInterval(async () => {
-  //     const result = await navigit.syncIssues()
-  //     if(result) {
-  //       console.log("issues fetched bro")
-  //       if (active === "Issues") {
-  //         const issues = store.getSorted("issues");
-  //         setContent(issues)
-  //       }
-  //     }
-  //   }, 5000)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const result = await navigit.syncIssues();
+      if (result) {
+        setIssue(result);
+        console.log("issues fetched bro");
+        if (active === "Issues") {
+          const issues = store.getSorted("issues");
+          setContent(issues);
+        }
+      }
+    }, 5000);
 
-  //   return () => clearInterval(interval)
-  // })
+    return () => clearInterval(interval);
+  });
 
-  // useEffect(() => {
-  //   const interval = setInterval(async () => {
-  //     const result = await navigit.syncPR()
-  //     if(result) {
-  //       console.log("PRs fetched bro")
-  //       if (active === "PRs") {
-  //         const prs = store.getSorted("pr");
-  //         setContent(prs)
-  //       }
-  //     }
-  //   }, 5000)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const result = await navigit.syncPR();
+      if (result) {
+        setPr(result);
+        console.log("PRs fetched bro");
+        if (active === "PRs") {
+          const prs = store.getSorted("pr");
+          setContent(prs);
+        }
+      }
+    }, 5000);
 
-  //   return () => clearInterval(interval)
-  // })
+    return () => clearInterval(interval);
+  });
 
   const getRepoWithCursor = ()=>{
     const i = filteredContent.length == 0? cursor : cursor % filteredContent.length
@@ -193,45 +201,39 @@ export default function Home() {
   }
 
   const filterContent = () => {
-    if(text!=""){
-      let keys = []
+    if (text != "") {
+      let keys = [];
       if (active === "Repos") {
-        keys = [
-          "name",
-          "ownedBy"
-        ]
+        keys = ["name", "ownedBy"];
       } else if (active === "PRs") {
-        keys = [
-          "repo",
-          "title"
-        ]
+        keys = ["repo", "title"];
       } else if (active === "Issues") {
-        keys = [
-          "repo",
-          "title"
-        ]
+        keys = ["repo", "title"];
       }
       const options = {
         keys,
-        threshold : 0.1
+        threshold: 0.1,
       };
       const fuse = new Fuse(content, options);
       // Change the pattern
-      const pattern = text
+      const pattern = text;
       const data = fuse.search(pattern).map((val) => {
-        return val['item']
-      })
-      setFilteredContent(data)
-      if(data.length>0){
-        setCursor(0)
+        return val["item"];
+      });
+      setFilteredContent(data);
+      if (data.length > 0) {
+        setCursor(0);
       }
-      console.log("gonna set include search result to true", includeSearchResult)
-      setIncludeSearchResult(includeSearchResult+1)
-    }else{
-      setFilteredContent(content)
+      console.log(
+        "gonna set include search result to true",
+        includeSearchResult
+      );
+      setIncludeSearchResult(includeSearchResult + 1);
+    } else {
+      setFilteredContent(content);
     }
     setIsLoading(false);
-  }
+  };
 
   const fetchBranches = async (ownedBy, name) => {
     const result = await navigit.searchBranches(ownedBy, name)
@@ -276,8 +278,7 @@ export default function Home() {
         }else{
           ipcRenderer.send("open-repo", getRepoWithCursor().pr);
         }
-        markVisited()
-
+        markVisited();
       } else if (e.code.includes("Up")) {
         e.preventDefault()
         if(showBranches){
@@ -287,7 +288,6 @@ export default function Home() {
           var index = cursor == 0 ? (filteredContent.length + publicRepos.length) - 1 : (cursor - 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
-        
       } else {
         if(showBranches){
           var index = (branchCursor + 1) % filteredBranches.length;
@@ -329,12 +329,13 @@ export default function Home() {
   }
 
   const markVisited = () => {
-    console.log("inside markvisited", filteredContent[cursor])
-    if(filteredContent[cursor].key){
-      const branch = active === "Repos" ? "repos" : active == "PRs" ? "pr" : "issues"
-      store.markVisited(branch, filteredContent[cursor].key)
+    console.log("inside markvisited", filteredContent[cursor]);
+    if (filteredContent[cursor].key) {
+      const branch =
+        active === "Repos" ? "repos" : active == "PRs" ? "pr" : "issues";
+      store.markVisited(branch, filteredContent[cursor].key);
     }
-  }
+  };
 
   const renderCards = () => {
     // No content
@@ -363,14 +364,13 @@ export default function Home() {
             branchName={branch.name}
             key={num}
             active={branchCursor == num}
-            handleCardClick={()=>{
-              setBranchCursor(num)
-            }
-            }
-          />      
+            handleCardClick={() => {
+              setBranchCursor(num);
+            }}
+          />
         );
-      })
-    }else if (active === "Repos") {
+      });
+    } else if (active === "Repos") {
       // Repos
       return filteredContent.map((cont, num) => {
         let repo = {
@@ -397,18 +397,19 @@ export default function Home() {
       });
     } else if (active === "Issues") {
       //Issues
-      console.log(content)
-      return filteredContent.map((cont, num)=>{
+      console.log(content);
+      return filteredContent.map((cont, num) => {
         let issue = {
           message: cont.title,
-          status: cont.role === "author"
-          ? "Opened"
-          : cont.role === "assignee"
-          ? "Assigned"
-          : "Review",
+          status:
+            cont.role === "author"
+              ? "Opened"
+              : cont.role === "assignee"
+              ? "Assigned"
+              : "Review",
           time: moment(cont.time).fromNow(),
           repo_name: cont.repo,
-        }
+        };
         return (
           <IssueCard
             data={issue}
@@ -425,8 +426,7 @@ export default function Home() {
             }}
           />
         );
-      })
-      
+      });
     } else if (active === "PRs") {
       // Prs
       return filteredContent.map((cont, num) => {
@@ -482,7 +482,7 @@ export default function Home() {
     }else{
       return (<></>)
     }
-  }
+  };
 
   const renderPublicRepos = () => {
     if (active === "Repos" && !showBranches){
@@ -531,22 +531,28 @@ export default function Home() {
       <div className="home-container">
         <Header settings={true} from="/" />
         <div className="home-nav">
-          <Nav currentTab={
-            (tab) => {
-            setActive(tab)
-            setIsLoading(true)
-            }
-            } keyUpdate={active} />
+          <Nav
+            currentTab={(tab) => {
+              setActive(tab);
+              setIsLoading(true);
+            }}
+            keyUpdate={active}
+            issueBadgeCount={issue}
+            repoBadgeCount={repo}
+            prBadgeCount={pr}
+          />
         </div>
         <div className="home-input-wrapper">
-          <input ref={inputRef}
+          <input
+            ref={inputRef}
             type="text"
             className="home-input"
             placeholder="Type and search private and public repos"
             value={text}
             onChange={(e) => {
-              console.log(e)
-              setText(e.target.value)}}
+              console.log(e);
+              setText(e.target.value);
+            }}
             autoFocus={true}
           />
         </div>

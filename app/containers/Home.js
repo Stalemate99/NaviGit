@@ -12,6 +12,8 @@ import RepoCard from "../components/RepoCard";
 import BranchCard from "../components/BranchCard";
 import PRCard from "../components/PRCard";
 import IssueCard from "../components/IssueCard";
+import PublicResultsHeader from "../components/PublicResultsHeader";
+import Loader from "../components/Loader";
 
 
 const { ipcRenderer } = window.require("electron");
@@ -33,11 +35,15 @@ export default function Home() {
   const [filteredContent, setFilteredContent] = useState([]);
   const [isInitialText, setIsInitialText] = useState(true);
   const [isLoading, setIsLoading] = useState(true)
-  const [includeSearchResult, setIncludeSearchResult] = useState(0)
+
+  const [filteredBranches, setFilteredBranches] = useState([])
   const [showBranches, setShowBranches] = useState(false)
   const [branchCursor, setBranchCursor] = useState(0)
   const [branches, setBranches] = useState([])
   const inputRef = useRef(null);
+
+  const [includeSearchResult, setIncludeSearchResult] = useState(0)
+  const [publicRepos, setPublicRepos] = useState([])
 
   useEffect(() => {
     // Listening for keypress
@@ -75,12 +81,23 @@ export default function Home() {
       } else if( active==="Repos" && text.includes(':')){
         if (!showBranches) {
           setShowBranches(true)
-          setBranches([])
-          fetchBranches(filteredContent[cursor].ownedBy, filteredContent[cursor].name);
-          setBranchCursor(0)
+          if (branches.length > 0) setBranches([])
+          if (filteredBranches.length > 0) setFilteredBranches([])
+          const repo = getRepoWithCursor()
+          fetchBranches(repo.ownedBy, repo.name);
+        }else{
+          if (branches.length == 0){
+            const repo = getRepoWithCursor()
+            fetchBranches(repo.ownedBy, repo.name);
+          }
+          else filterBranches(branches)
         }
+        
       }else{
-        if (showBranches) setShowBranches(false)
+        if (showBranches) {
+          setShowBranches(false)
+          console.log("setting branches empty")
+        }
         filterContent()
       }
     }, 100);
@@ -91,16 +108,17 @@ export default function Home() {
   useEffect(() => {
     if(!includeSearchResult || active!="Repos" || text==="") return
     console.log("enters include search use effect")
+    setPublicRepos([])
     const timer = setTimeout(() => {
         (async () => {
           const searchText = text
           const result = await navigit.search(searchText);
           if(inputRef.current.value===searchText){
-            const data = [
-              ...filteredContent,
-              ...result
-            ]
-            setFilteredContent(data)
+            // const data = [
+            //   ...filteredContent,
+            //   ...result
+            // ]
+            setPublicRepos(result)
           }
         })()
     }, 200);
@@ -141,6 +159,38 @@ export default function Home() {
 
   //   return () => clearInterval(interval)
   // })
+
+  const getRepoWithCursor = ()=>{
+    const i = filteredContent.length == 0? cursor : cursor % filteredContent.length
+    console.log(i, cursor, filteredContent.length)
+    const repo = cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i]
+    console.log("getting repo with cursor", cursor, i, publicRepos, filteredContent)
+    return repo
+  }
+
+  const filterBranches = (allBranches) => {
+    const branchSplit = text.split(":")
+    const query = branchSplit[branchSplit.length -1]
+    if(query != ""){
+      const options = {
+        keys : [
+          "name"
+        ],
+        threshold : 0.1
+      };
+      const fuse = new Fuse(allBranches, options);
+      const data = fuse.search(query).map((val) => {
+        return val['item']
+      })
+      setFilteredBranches(data)
+      if (data.length > 0){
+        setBranchCursor(0)
+      }
+    }else{
+      setFilteredBranches(allBranches)
+      setBranchCursor(0)
+    }
+  }
 
   const filterContent = () => {
     if(text!=""){
@@ -185,11 +235,20 @@ export default function Home() {
 
   const fetchBranches = async (ownedBy, name) => {
     const result = await navigit.searchBranches(ownedBy, name)
-    setBranches(result)
+    if (inputRef.current.value!==text) return
+    const data = result.map((branch) => {
+      return {
+        name : branch
+      }
+    })
+    setBranches(data)
+    filterBranches(data)
     }
 
   const clearBranches = async () => {
-    setShowBranches(false)
+    if(showBranches) setShowBranches(false)
+    if(branches.length > 0) setBranches([])
+    if(filteredBranches.length > 0) setFilteredBranches([])
     const textArr = text.split(":")
     setText(textArr[0])
   }
@@ -204,43 +263,46 @@ export default function Home() {
       setActive(tabs[i]);
     } else if (e.code.includes("Arrow")) {
       if (e.code.includes("Left")) {
-        ipcRenderer.send("open-repo", filteredContent[cursor].issues);
+        if(showBranches){
+          ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/tree/${filteredBranches[branchCursor]}`);
+        }else{
+          ipcRenderer.send("open-repo", getRepoWithCursor().issues);
+        }
         markVisited()
 
       } else if (e.code.includes("Right")) {
         if(showBranches){
-          ipcRenderer.send("open-repo", `${filteredContent[cursor].url}/tree/${branches[branchCursor]}`);
+          ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/tree/${filteredBranches[branchCursor]}`);
         }else{
-          ipcRenderer.send("open-repo", filteredContent[cursor].pr);
+          ipcRenderer.send("open-repo", getRepoWithCursor().pr);
         }
         markVisited()
 
       } else if (e.code.includes("Up")) {
         e.preventDefault()
         if(showBranches){
-          var index = branchCursor == 0 ? branches.length - 1 : (branchCursor - 1) % branches.length;
+          var index = branchCursor == 0 ? filteredBranches.length - 1 : (branchCursor - 1) % filteredBranches.length;
           setBranchCursor(index);
         }else{
-          var index = cursor == 0 ? filteredContent.length - 1 : (cursor - 1) % filteredContent.length;
+          var index = cursor == 0 ? (filteredContent.length + publicRepos.length) - 1 : (cursor - 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
         
       } else {
-
         if(showBranches){
-          var index = (branchCursor + 1) % branches.length;
+          var index = (branchCursor + 1) % filteredBranches.length;
           setBranchCursor(index);
         }else{
-          var index = (cursor + 1) % filteredContent.length;
+          var index = (cursor + 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
       }
     } else if (e.code.includes("Enter")) {
       markVisited()
       if(showBranches){
-        ipcRenderer.send("open-repo", `${filteredContent[cursor].url}/tree/${branches[branchCursor]}`);
+        ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/tree/${filteredBranches[branchCursor]}`);
       }else{
-      ipcRenderer.send("open-repo", filteredContent[cursor].url);
+      ipcRenderer.send("open-repo", getRepoWithCursor().url);
       }
       // ipcRenderer.once("Enter-reply", (e, data) => {
       //   console.log(data, "From Main Process");
@@ -294,10 +356,11 @@ export default function Home() {
         </div>
       );
     } else if (active==="Repos" & showBranches){
-      return branches.map((branchName, num) => {
+      console.log("filtered branches are", filteredBranches)
+      return filteredBranches.map((branch, num) => {
         return (
           <BranchCard
-            branchName={branchName}
+            branchName={branch.name}
             key={num}
             active={branchCursor == num}
             handleCardClick={()=>{
@@ -401,13 +464,15 @@ export default function Home() {
   };
 
   const renderBranchRespository = () => {
-    if(filteredContent[cursor] && showBranches){
+    if (!showBranches) return
+    const repo = getRepoWithCursor()
+    if(repo){
       return (
         <RepoCard className="home-selected-repo"
             data={{
-              name: filteredContent[cursor].name,
-              source: filteredContent[cursor].isOwnedByUser ? "individual" : "org",
-              source_name: filteredContent[cursor].ownedBy,
+              name: repo.name,
+              source: repo.isOwnedByUser ? "individual" : "org",
+              source_name: repo.ownedBy,
             }}
             active={true}
             isStatic={true}
@@ -416,6 +481,37 @@ export default function Home() {
       )
     }else{
       return (<></>)
+    }
+  }
+
+  const renderPublicRepos = () => {
+    if (active === "Repos" && !showBranches){
+      if (text!="" && publicRepos.length == 0){
+        return (<Loader/>)
+      }else if(publicRepos.length > 0){
+        const cards = publicRepos.map((cont, num) => {
+          let repo = {
+            name: cont.name,
+            source: cont.isOwnedByUser ? "individual" : "org",
+            source_name: cont.ownedBy,
+          };
+          const index = filteredContent.length + num
+          return (
+            <RepoCard
+              data={repo}
+              key={index}
+              active={cursor === index}
+              handleCardClick={() => setCursor(index)}
+            />
+          );
+        })
+        return (
+        <>
+        <PublicResultsHeader/>
+        {cards}
+        </>
+        )
+      }
     }
   }
 
@@ -455,7 +551,10 @@ export default function Home() {
           />
         </div>
         {renderBranchRespository()}
-        <div className="home-list">{renderCards()}</div>
+        <div className="home-list">
+          {renderCards()}
+          {renderPublicRepos()}
+        </div>
       </div>
     </>
   );

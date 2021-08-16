@@ -1,6 +1,7 @@
 import parse from "parse-link-header";
 import parallel from "async-await-parallel";
 import axios from 'axios';
+import {difference} from 'lodash';
 class Navigit {
   constructor(git, store, authKey) {
     this.git = git;
@@ -257,9 +258,10 @@ class Navigit {
       }
       console.log("outside for")
       await parallel(tasks);
+      const syncDifference = difference(Object.keys(this.localDump["issues"]),Object.keys(this.store.get("issues")));
       this.store.sync(this.localDump,"issues");
       this.localDump["issues"] = {};
-      return true;
+      return syncDifference ? syncDifference.length : false;
     } catch (e) {
       this.localDump["issues"] = {};
       throw e;
@@ -284,9 +286,10 @@ class Navigit {
         });
       }
       await parallel(tasks);
+      const syncDifference = difference(Object.keys(this.localDump["pr"]),Object.keys(this.store.get("pr")));
       this.store.sync(this.localDump,"pr");
       this.localDump["pr"] = {};
-      return true;
+      return syncDifference ? syncDifference.length : false;
     } catch (e) {
       this.localDump["pr"] = {};
       throw e;

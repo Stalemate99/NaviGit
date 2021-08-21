@@ -229,9 +229,11 @@ class Navigit {
     try{
       await this.syncUserRepos(since);
       await this.syncUserOrgRepos();
+      const syncDifference = difference(Object.keys(this.localDump["repos"]),Object.keys(this.store.get("repos")));
+      console.log("777 ",syncDifference,this.localDump["repos"])
       this.store.sync(this.localDump,"repos");
       this.localDump["repos"] = {};
-      return true;
+      return syncDifference.length;
     }catch(e){
       this.localDump["repos"] = {};
       throw e;
@@ -261,7 +263,7 @@ class Navigit {
       const syncDifference = difference(Object.keys(this.localDump["issues"]),Object.keys(this.store.get("issues")));
       this.store.sync(this.localDump,"issues");
       this.localDump["issues"] = {};
-      return syncDifference ? syncDifference.length : false;
+      return syncDifference.length;
     } catch (e) {
       this.localDump["issues"] = {};
       throw e;
@@ -289,7 +291,8 @@ class Navigit {
       const syncDifference = difference(Object.keys(this.localDump["pr"]),Object.keys(this.store.get("pr")));
       this.store.sync(this.localDump,"pr");
       this.localDump["pr"] = {};
-      return syncDifference ? syncDifference.length : false;
+      console.log(syncDifference,'pr88888 ds')
+      return syncDifference.length;
     } catch (e) {
       this.localDump["pr"] = {};
       throw e;

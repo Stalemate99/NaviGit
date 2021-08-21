@@ -81,16 +81,17 @@ class Store {
 
   sync(localDump, name) {
     if(localDump){
-      this.data[name] = {}
       if(name=="repos"){
         Object.keys(localDump["repos"]).forEach((key)=>{
           this.repoSet(key, localDump["repos"][key])
         })  
       } else if (name=="pr"){
+        this.data[name] = {}
         Object.keys(localDump["pr"]).forEach((key)=>{
           this.prSet(key, localDump["pr"][key])
         })
       }else if (name == "issues"){
+        this.data[name] = {}
         Object.keys(localDump["issues"]).forEach((key)=>{
           this.issueSet(key, localDump["issues"][key])
         });

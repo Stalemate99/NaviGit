@@ -5,6 +5,12 @@
   box-sizing: border-box;
 }
 
+
+@font-face {
+  font-family: "Avenir Next";
+  src: local("AvenirNext"), url("./fonts/AvenirNext.ttf") format("truetype");
+}
+
 html::-webkit-scrollbar {
   display: none;
 }
@@ -74,6 +80,7 @@ input::-webkit-selection {
 }
 
 .loader{
+  margin-top: 20px;
   display: inherit;
 }
 
@@ -496,19 +503,41 @@ p {
   height: 100vh;
   width: 100vw;
   display: grid;
-  grid-template-areas: "header" "settings_title" "settings_content";
+  grid-template-areas: "header" "settings_header" "settings_content";
   grid-template-rows: 0.1fr 0fr 1fr;
 }
 
-.settings-title {
-  grid-area: settings_title;
-  color: #69cc8e;
-  font-family: Futura-Bold;
-  font-style: normal;
-  font-weight: normal;
-  font-size: 35px;
+.settings-header {
+  grid-area: settings_header;
+  display: flex;
+  justify-content: space-between;
   line-height: 28px;
-  padding: 1em;
+  padding: 2em;
+}
+
+.settings-title{
+  color: #69cc8e;
+  font-family: Avenir Next;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 35px;
+}
+
+.settings-back{
+  display: flex;
+  align-items: center;
+}
+
+.settings-back p {
+  margin-left: 10px;
+  font-family: Avenir Next;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.settings-back:hover{
+  cursor: pointer;
 }
 
 .settings-content {
@@ -518,8 +547,7 @@ p {
   flex-direction: column;
   align-items: left;
   justify-content: space-between;
-  padding: 1em 0 80px 0;
-  margin: 0 1em 2em 1em;
+  padding: 1em 1em 75px 1em;
 }
 
 .settings-content-item {
@@ -533,10 +561,11 @@ p {
 
 .settings-content-item:hover {
   background: #232143;
+  cursor: pointer;
 }
 
 .settings-text {
-  margin-left: 1em;
+  margin-left: 1.5em;
   font-family: Avenir Next;
   font-style: normal;
   font-weight: 600;
@@ -678,7 +707,7 @@ p {
   font-family: Avenir Next;
   font-style: normal;
   font-weight: 500;
-  font-size: 19px;
+  font-size: 16px;
   color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -689,7 +718,7 @@ p {
   grid-area: card_content;
   display: grid;
   grid-template-areas: "card_content_repo_name card_content_repo_name" "card_content_repo_source card_content_repo_source_name";
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 1.1fr 1fr;
   grid-template-columns: 0fr 1fr;
   row-gap: 0.4em;
   margin: 0.5em 0;

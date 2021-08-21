@@ -21,7 +21,7 @@ export default function Help({ closeTour }) {
         </p>
       );
     } else if (page === 2) {
-      return <p>One more tutorial screen and your free!</p>;
+      return <p>One more tutorial screen and you're free!</p>;
     } else if (page === 3) {
       return <p>To being a lazy sloth forever 🍻</p>;
     }

@@ -11,13 +11,13 @@ import RepoActionsSec from "../../assets/RepoActionsSec.svg";
 
 
 
-export default function BranchCard({ active, branchName, handleCardClick, pullRequest = false, issues = false, actions = false }) {
+export default function BranchCard({ active, branchName, handleCardClick, pullRequest = false, issues = false, actions = false, shouldScroll = true }) {
   const card = useRef(null);
 
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
-      card.current.scrollIntoView();
+      if(shouldScroll) card.current.scrollIntoView();
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }
@@ -38,13 +38,14 @@ export default function BranchCard({ active, branchName, handleCardClick, pullRe
     }
   }
 
+
   return (
     <div
       className="card-branch-wrapper"
       ref={card}
       onClick={() => handleCardClick()}
     >
-        <div className="card-type">{getIcon}</div>
+        <div className="card-type">{getIcon()}</div>
         <p className="card-content-branch">{branchName}</p>
     </div>
   );

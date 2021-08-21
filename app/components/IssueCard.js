@@ -12,7 +12,7 @@ import AssignedPri from "../../assets/IdPri.svg";
 import AssignedSec from "../../assets/IdSec.svg";
 import Pending from "../../assets/Pending.svg";
 
-export default function Card({ data, active, handleCardClick }) {
+export default function Card({ data, active, handleCardClick, shouldScroll = true}) {
   const { message, status, time, repo_name } = data;
   const card = useRef();
 
@@ -20,7 +20,7 @@ export default function Card({ data, active, handleCardClick }) {
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
-      card.current.scrollIntoView();
+      if(shouldScroll) card.current.scrollIntoView();
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }

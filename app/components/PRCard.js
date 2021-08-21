@@ -12,14 +12,14 @@ import AssignedPri from "../../assets/IdPri.svg";
 import AssignedSec from "../../assets/IdSec.svg";
 import Pending from "../../assets/Pending.svg";
 
-export default function Card({ data, active, handleCardClick }) {
+export default function Card({ data, active, handleCardClick, shouldScroll = true }) {
   const { number = 1, message, status, time, repo_name = "kq" } = data;
   const card = useRef();
 
   useEffect(() => {
     if (active) {
       card.current.classList.add("active");
-      card.current.scrollIntoView();
+      if(shouldScroll) card.current.scrollIntoView();
     } else if (card.current && card.current.classList.contains("active") > -1) {
       card.current.classList.remove("active");
     }

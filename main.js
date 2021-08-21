@@ -14,8 +14,8 @@ const { electron } = require("process");
 
 let mainWindow;
 let tray;
-let trayX,
-  trayY = 0;
+let trayX = 0, trayY = 0;
+let hotKey = "CommandOrControl+B";
 
 app.on("ready", () => {
   mainWindow = new BrowserWindow({
@@ -105,7 +105,7 @@ app.on("ready", () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
   // Setting up Global Shortcuts
-  globalShortcut.register("CommandOrControl+I", () => {
+  globalShortcut.register(hotKey, () => {
     toggleView();
   });
 
@@ -114,6 +114,7 @@ app.on("ready", () => {
     const { x, y } = bound;
     trayX = x;
     trayY = y;
+    console.log("tray clicked", bound)
 
     // Toggling Visibility
     toggleView();
@@ -121,6 +122,7 @@ app.on("ready", () => {
 
   // Close when focus is outside
   mainWindow.on("blur", (events, bound) => {
+    mainWindow.webContents.send('hide')
     mainWindow.hide();
     process.platform === "darwin" && app.dock.show();
   });
@@ -129,15 +131,15 @@ app.on("ready", () => {
 function toggleView() {
   let x = trayX;
   let y = trayY;
+  console.log(x,y)
 
   const { height, width } = mainWindow.getBounds();
   if (mainWindow.isVisible()) {
+    mainWindow.webContents.send('hide')
     mainWindow.hide();
   } else {
-    const yPos = parseInt(screen.getPrimaryDisplay().workAreaSize.height / 5);
-    const xPos = parseInt(
-      screen.getPrimaryDisplay().workAreaSize.width / 2 - width / 2
-    );
+    const yPos = parseInt((screen.getPrimaryDisplay().workAreaSize.height - 632) / 2);
+    const xPos = parseInt((screen.getPrimaryDisplay().workAreaSize.width - 536) / 2);
 
     mainWindow.setBounds({
       x: xPos,
@@ -146,6 +148,7 @@ function toggleView() {
       height: 632,
     });
 
+    mainWindow.webContents.send('show')
     mainWindow.show();
   }
 }

@@ -7,8 +7,9 @@ import Button from "../components/Button";
 import Keyboard from "../../assets/Keyboard.svg";
 import Retry from "../../assets/Retry.svg";
 
-export default function Preferences() {
+export default function Preferences(props) {
   const [hotKey, setHotKey] = useState("");
+  const [keys, setKeys] = useState([])
   const history = useHistory();
 
   // useEffect(() => {
@@ -52,17 +53,24 @@ export default function Preferences() {
     if (key.includes("Key")) {
       key = key.slice(3);
     }
-    if (hotKey === "") {
-      setHotKey(key);
-    } else {
-      setHotKey(hotKey + " + " + key);
+    if (!keys.includes(key)){
+      setKeys([...keys, key])
+      if (hotKey === "") {
+        setHotKey(key);
+      } else {
+        setHotKey(hotKey + " + " + key);
+      }
     }
   }
 
   function handleGlobalShotcut() {
     // Set global shortcut
     localStorage.setItem("global", JSON.stringify(hotKey));
-    history.push("/sync");
+    if(props.location.state){
+      history.goBack()
+    }else{
+      history.push( '/settings');
+    }
   }
 
   return (

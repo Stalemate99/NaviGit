@@ -104,10 +104,7 @@ app.on("ready", () => {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
-  // Setting up Global Shortcuts
-  globalShortcut.register(hotKey, () => {
-    toggleView();
-  });
+  
 
   // Tray event handlers
   tray.on("click", (events, bound) => {
@@ -159,3 +156,16 @@ ipcMain.on("open-repo", async (event, data) => {
   await open(data);
   // event.reply("Enter-reply", "Gotcha");
 });
+
+ipcMain.on("global-shortcut", (event, data) => {
+  globalShortcut.unregisterAll()
+  // Setting up Global Shortcuts
+  globalShortcut.register(data, () => {
+    toggleView();
+  });
+})
+
+app.on('will-quit', () => {
+  // Unregister all shortcuts.
+  globalShortcut.unregisterAll()
+})

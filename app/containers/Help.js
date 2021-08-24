@@ -4,7 +4,7 @@ import PRSec from "../../assets/PRSec.svg";
 import Header from "../components/Header";
 import Button from "../components/Button";
 
-import RepoSec from "../../assets/RepoSec.svg";
+import RepoHelp from "../../assets/RepoHelp.svg";
 import IssueSec from "../../assets/IssueSec.svg";
 import { useHistory } from "react-router-dom";
 
@@ -17,7 +17,7 @@ export default function Help({ closeTour }) {
     if (page === 1) {
       return (
         <p>
-          Nice, now here's how you use navigit like a <span>pro !</span>
+          Nice, now here's how you use navigit like a<span>pro !</span>
         </p>
       );
     } else if (page === 2) {
@@ -58,19 +58,19 @@ export default function Help({ closeTour }) {
             <p>
               On <span>selecting</span> a repo :
             </p>
-            <p>
+            <p className="help-info">
               Pressing Enter opens the repo{" "}
               <label>
-                <RepoSec />
+                <RepoHelp />
               </label>{" "}
             </p>
-            <p>
+            <p className="help-info">
               Pressing Left arrow opens the Issues{" "}
               <label>
                 <IssueSec />
               </label>{" "}
             </p>
-            <p>
+            <p className="help-info">
               Pressing right arrow opens the pull requests{" "}
               <label>
                 <PRSec />

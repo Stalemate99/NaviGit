@@ -8,7 +8,7 @@ export default function SignIn() {
   const history = useHistory();
   return (
     <div className="container-signin">
-      <Header />
+      <Header center={true}/>
       <div className="main">
         <p className="subtitle">
           Navigate around git without leaving your keyboard

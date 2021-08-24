@@ -15,13 +15,15 @@ import IssueCard from "../components/IssueCard";
 import PublicResultsHeader from "../components/PublicResultsHeader";
 import Loader from "../components/Loader";
 import { concat } from "async";
+import EmptyState from "../components/EmptyState";
 
 const { ipcRenderer } = window.require("electron");
 
 const tabs = ["Repos", "PRs", "Issues"];
 const store = new Store();
 
-let pat = JSON.parse(localStorage.getItem("signin")).authKey;
+let token = JSON.parse(localStorage.getItem("signin"));
+let pat = token ? token.authKey : '';
 const octo = new Octokit({
   auth: pat,
 });
@@ -67,10 +69,9 @@ export default function Home() {
     ipcRenderer.on('show', async () => {
       console.log("sync repos show",)
       const since = localStorage.getItem("last_opened")
-      console.log("sync repos show", since)
       let result
       if(since){ result = await navigit.syncRepos(since)}
-      else{ result = await navigit.syncRepos()}
+      else { result = await navigit.syncRepos() }
       console.log("sync repos value", result)
       const now = new Date().toISOString()
       localStorage.setItem("last_opened", now);
@@ -191,7 +192,7 @@ export default function Home() {
         setShouldScroll(false)
         setIsSyncing(true)
       }
-      const result = await navigit.syncIssues();
+      const result = 10;//await navigit.syncIssues();
       console.log("issues result returned",result);
       if (result && result > 0) {
         console.log("Issue badge results  issue s came brroooo",result);
@@ -203,7 +204,7 @@ export default function Home() {
           setContent(issues);
         }
       }
-      if(isSyncing){
+      if (isSyncing) {
         setShouldScroll(false)
         setIsSyncing(false)
         }
@@ -240,9 +241,9 @@ export default function Home() {
   });
 
   const getRepoWithCursor = ()=>{
-    const i = filteredContent.length == 0? cursor : cursor % filteredContent.length
+    const i = cursor >= filteredContent.length? cursor - filteredContent.length : cursor
     const repo = cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i]
-    console.log("REPO WITH CURSOR", repo)
+    console.log("REPO WITH CURSOR", i, cursor)
     return repo
   }
 
@@ -447,7 +448,7 @@ export default function Home() {
       //   </div>
       // );
     } else if(!isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0){
-        return <div>ONUM ILA BAA</div>
+      return <EmptyState active={active}/>
       } else if (active==="Repos" & showBranches){
       console.log("filtered branches are", filteredBranches)
       const actionCards = [
@@ -514,6 +515,7 @@ export default function Home() {
             key={num}
             active={cursor === num}
             handleCardClick={(name) => {
+              console.log(cont.name, "clicked outer")
               handleBadgeUpdate()
               setShouldScroll(true)
               setCursor(
@@ -523,6 +525,12 @@ export default function Home() {
                 // }, 0)
                 num
               );
+            }}
+            handleIssuesClick={() => {
+              ipcRenderer.send('open-repo', cont.issues)
+            }}
+            handlePRClick={() => {
+              ipcRenderer.send('open-repo', cont.pr)
             }}
             shouldScroll={shouldScroll}
           />
@@ -644,6 +652,12 @@ export default function Home() {
                 setShouldScroll(true)
                 setCursor(index)
               }}
+              handleIssuesClick={() => {
+              ipcRenderer.send('open-repo', cont.issues)
+            }}
+            handlePRClick={() => {
+              ipcRenderer.send('open-repo', cont.pr)
+            }}
               shouldScroll={shouldScroll}
             />
           );
@@ -672,7 +686,7 @@ export default function Home() {
         pauseOnHover
       />
       <div className="home-container">
-        <Header settings={true} from="/" sync={false}/>
+        <Header settings={true} from="/" sync={isSyncing}/>
         {console.log("Issue Badge going to nav", issue)}
         <div className="home-nav">
           <Nav

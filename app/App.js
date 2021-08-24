@@ -10,10 +10,13 @@ import Sync from "./containers/Sync";
 import Settings from "./containers/Settings";
 import Pat from "./containers/Pat";
 
+const { ipcRenderer } = window.require("electron");
+
 import "./App.css";
 
 export default function App() {
   const [signIn, setSignIn] = useState(() => {
+    console.log("trying to get auth")
     if (localStorage.getItem("signin")) {
       const pat = JSON.parse(localStorage.getItem("signin"));
       if (pat.authKey) {
@@ -26,6 +29,7 @@ export default function App() {
     if (localStorage.getItem("global")) {
       const cmd = JSON.parse(localStorage.getItem("global"));
       if (cmd !== "") {
+        ipcRenderer.send('global-shortcut', cmd)
         return true;
       }
     }

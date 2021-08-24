@@ -17,8 +17,8 @@ export default function Header({ settings, from, sync = false }) {
   }
 
   return (
-    <div className={settings ? "header-large" : "header"}>
-      <div className="logo">{settings ? renderLogo() : <LogoL />}</div>
+    <div className={settings ? "header-large" : "header-center"}>
+      <div className={settings ? "logo" : "logo-center"}>{settings ? renderLogo() : <LogoL />}</div>
       <div className="title" styles={{
         width : '20%'
       }}>{settings ? <NaviGit /> : <NaviGitL />}</div>

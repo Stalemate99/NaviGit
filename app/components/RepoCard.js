@@ -10,7 +10,7 @@ import Org from "../../assets/Org.svg";
 import Branch from "../../assets/Branch.svg";
 import Individual from "../../assets/Host.svg";
 
-export default function RepoCard({ active, data, handleCardClick, isStatic = false, shouldScroll = true }) {
+export default function RepoCard({ active, data, handleCardClick, handlePRClick, handleIssuesClick, isStatic = false, shouldScroll = true }) {
   const { name, source, source_name } = data;
   const card = useRef(null);
 
@@ -41,8 +41,16 @@ export default function RepoCard({ active, data, handleCardClick, isStatic = fal
   function renderRepoSpecs() {
     return (
       <>
-        <IssuePri />
-        <PRPri />
+        <IssuePri onClick={(e) => {
+          e.stopPropagation()
+          if(handleIssuesClick) handleIssuesClick()
+        }} />
+        <PRPri onClick={(e) => {
+          if (handlePRClick) {
+            e.stopPropagation()
+            handlePRClick()
+          }
+        }}/>
       </>
     );
   }
@@ -50,8 +58,16 @@ export default function RepoCard({ active, data, handleCardClick, isStatic = fal
   function renderActiveRepoSpecs() {
     return (
       <>
-        <IssueSec />
-        <PRSec />
+        <IssueSec onClick={(e) => {
+          e.stopPropagation()
+          if(handleIssuesClick) handleIssuesClick()
+        }} />
+        <PRSec onClick={(e) => {
+          if (handlePRClick) {
+          e.stopPropagation()
+            handlePRClick()
+          }
+        }}/>
       </>
     );
   }

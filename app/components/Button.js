@@ -41,6 +41,7 @@ export default function Button({ type, text, active, eventCall }) {
         <p style={{ color: active ? "white" : "#adadb5", marginLeft: "0.5em" }}>
           {text}
         </p>
+        <div style={{width: '10px'}}></div>
       </button>
     );
   }
@@ -84,6 +85,7 @@ export default function Button({ type, text, active, eventCall }) {
         <p style={{ color: active ? "white" : "#adadb5", fontSize: "25px" }}>
           {text}
         </p>
+        <div style={{width: '10px'}}></div>
       </button>
     );
   }

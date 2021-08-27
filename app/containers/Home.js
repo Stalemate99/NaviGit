@@ -29,8 +29,6 @@ const octo = new Octokit({
 });
 const navigit = new Navigit(octo, store, pat);
 
-
-
 export default function Home() {
   const [active, setActive] = useState(tabs[0]);
   const [content, setContent] = useState([]);
@@ -70,7 +68,7 @@ export default function Home() {
       console.log("sync repos show",)
       const since = localStorage.getItem("last_opened")
       let result
-      if(since){ result = await navigit.syncRepos(since)}
+      if (since) { result = await navigit.syncRepos(since) }
       else { result = await navigit.syncRepos() }
       console.log("sync repos value", result)
       const now = new Date().toISOString()
@@ -98,28 +96,30 @@ export default function Home() {
     } else if (active === "PRs") {
       const prs = store.getSorted("pr");
       setContent(prs);
+      console.log("PR format", prs)
     } else if (active === "Issues") {
       const issues = store.getSorted("issues");
       setContent(issues);
+      console.log("issue format", issues)
     }
-    
+
     return () => {
       setContent([]);
     };
   }, [active]);
 
-  useEffect(()=>{
+  useEffect(() => {
     // Snapshot of updates
-    console.log(pr,repo,issue);
-  },[pr,repo,issue])
+    console.log(pr, repo, issue);
+  }, [pr, repo, issue])
 
   const handleBadgeUpdate = () => {
-    if (active=="Repos"){
-      if(repo > 0) setRepo(0)
-    }else if (active == "Issues"){
-      if(issue > 0) setIssue(0)
-    }else{
-      if(pr > 0) setPr(0)
+    if (active == "Repos") {
+      if (repo > 0) setRepo(0)
+    } else if (active == "Issues") {
+      if (issue > 0) setIssue(0)
+    } else {
+      if (pr > 0) setPr(0)
     }
   }
 
@@ -130,20 +130,21 @@ export default function Home() {
         setIsInitialText(false);
       } else if (active === "Repos" && text.includes(":")) {
         if (!showBranches) {
+          setBranchCursor(0)
           setShowBranches(true)
           if (branches.length > 0) setBranches([])
           if (filteredBranches.length > 0) setFilteredBranches([])
           const repo = getRepoWithCursor()
           fetchBranches(repo.ownedBy, repo.name);
-        }else{
-          if (branches.length == 0){
+        } else {
+          if (branches.length == 0) {
             const repo = getRepoWithCursor()
             fetchBranches(repo.ownedBy, repo.name);
           }
           else filterBranches(branches)
         }
-        
-      }else{
+
+      } else {
         if (showBranches) {
           setShowBranches(false)
           console.log("setting branches empty")
@@ -157,25 +158,25 @@ export default function Home() {
   }, [text]);
 
   useEffect(() => {
-    if(!includeSearchResult || active!="Repos" || text==="") return
+    if (!includeSearchResult || active != "Repos" || text === "") return
     console.log("enters include search use effect")
     setPublicRepos([])
     setIsPublicReposLoading(true)
     const timer = setTimeout(() => {
-        (async () => {
-          const searchText = text
-          const result = await navigit.search(searchText);
-          if(inputRef.current.value===searchText){
-            // const data = [
-            //   ...filteredContent,
-            //   ...result
-            // ]
-            setPublicRepos(result)
-            setIsPublicReposLoading(false)
-          }else if (inputRef.current.value===""){
-            setIsPublicReposLoading(false)
-          }
-        })()
+      (async () => {
+        const searchText = text
+        const result = await navigit.search(searchText);
+        if (inputRef.current.value === searchText) {
+          // const data = [
+          //   ...filteredContent,
+          //   ...result
+          // ]
+          setPublicRepos(result)
+          setIsPublicReposLoading(false)
+        } else if (inputRef.current.value === "") {
+          setIsPublicReposLoading(false)
+        }
+      })()
     }, 400);
 
     return () => clearTimeout(timer);
@@ -188,14 +189,14 @@ export default function Home() {
   // Sync Issues
   useEffect(() => {
     const interval = setInterval(async () => {
-      if(!isSyncing) {
+      if (!isSyncing) {
         setShouldScroll(false)
         setIsSyncing(true)
       }
-      const result = 10;//await navigit.syncIssues();
-      console.log("issues result returned",result);
+      const result = await navigit.syncIssues();
+      console.log("issues result returned", result);
       if (result && result > 0) {
-        console.log("Issue badge results  issue s came brroooo",result);
+        console.log("Issue badge results  issue s came brroooo", result);
         setShouldScroll(false)
         setIssue(result);
         console.log("issues fetched bro");
@@ -207,7 +208,7 @@ export default function Home() {
       if (isSyncing) {
         setShouldScroll(false)
         setIsSyncing(false)
-        }
+      }
     }, 8000);
 
     return () => clearInterval(interval);
@@ -216,13 +217,13 @@ export default function Home() {
   // Sync PR
   useEffect(() => {
     const interval = setInterval(async () => {
-      if(!isSyncing) {
+      if (!isSyncing) {
         setShouldScroll(false)
         setIsSyncing(true)
       }
       const result = await navigit.syncPR();
       if (result && result > 0) {
-        console.log(" results came brroooo",result);
+        console.log(" results came brroooo", result);
         setShouldScroll(false)
         setPr(result);
         console.log("PRs fetched bro");
@@ -231,7 +232,7 @@ export default function Home() {
           setContent(prs);
         }
       }
-      if(isSyncing) {
+      if (isSyncing) {
         setShouldScroll(false)
         setIsSyncing(false)
       }
@@ -240,8 +241,8 @@ export default function Home() {
     return () => clearInterval(interval);
   });
 
-  const getRepoWithCursor = ()=>{
-    const i = cursor >= filteredContent.length? cursor - filteredContent.length : cursor
+  const getRepoWithCursor = () => {
+    const i = cursor >= filteredContent.length ? cursor - filteredContent.length : cursor
     const repo = cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i]
     console.log("REPO WITH CURSOR", i, cursor)
     return repo
@@ -249,23 +250,25 @@ export default function Home() {
 
   const filterBranches = (allBranches) => {
     const branchSplit = text.split(":")
-    const query = branchSplit[branchSplit.length -1]
-    if(query != ""){
+    const query = branchSplit[branchSplit.length - 1]
+    if (query != "") {
       const options = {
-        keys : [
+        keys: [
           "name"
         ],
-        threshold : 0.1
+        threshold: 0.1
       };
       const fuse = new Fuse(allBranches, options);
       const data = fuse.search(query).map((val) => {
         return val['item']
       })
       setFilteredBranches(data)
-      if (data.length > 0){
+      if (data.length > 0) {
+        setBranchCursor(3)
+      } else {
         setBranchCursor(0)
       }
-    }else{
+    } else {
       setFilteredBranches(allBranches)
       setBranchCursor(0)
     }
@@ -307,20 +310,20 @@ export default function Home() {
 
   const fetchBranches = async (ownedBy, name) => {
     const result = await navigit.searchBranches(ownedBy, name)
-    if (inputRef.current.value!==text) return
+    if (inputRef.current.value !== text) return
     const data = result.map((branch) => {
       return {
-        name : branch
+        name: branch
       }
     })
     setBranches(data)
     filterBranches(data)
-    }
+  }
 
   const clearBranches = async () => {
-    if(showBranches) setShowBranches(false)
-    if(branches.length > 0) setBranches([])
-    if(filteredBranches.length > 0) setFilteredBranches([])
+    if (showBranches) setShowBranches(false)
+    if (branches.length > 0) setBranches([])
+    if (filteredBranches.length > 0) setFilteredBranches([])
     const textArr = text.split(":")
     setText(textArr[0])
   }
@@ -355,29 +358,30 @@ export default function Home() {
         e.preventDefault()
         handleBadgeUpdate()
         setShouldScroll(true)
-        if(showBranches){
+        if (showBranches) {
           var index = branchCursor == 0 ? filteredBranches.length + 3 - 1 : (branchCursor - 1) % (filteredBranches.length + 3);
           setBranchCursor(index);
-        }else{
+        } else {
           var index = cursor == 0 ? (filteredContent.length + publicRepos.length) - 1 : (cursor - 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
-      } else if (e.code.includes("Down")){
+      } else if (e.code.includes("Down")) {
         handleBadgeUpdate()
         setShouldScroll(true)
-        if(showBranches){
+        if (showBranches) {
           var index = (branchCursor + 1) % (filteredBranches.length + 3);
           setBranchCursor(index);
-        }else{
+        } else {
           var index = (cursor + 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
       }
     } else if (e.code.includes("Enter")) {
       markVisited()
-      if(showBranches){
+      console.log("filtered branches with cursor", filteredBranches, branchCursor)
+      if (showBranches) {
         let url = ''
-        switch(branchCursor) {
+        switch (branchCursor) {
           case 0:
             url = `${getRepoWithCursor().pr}`
             break;
@@ -388,11 +392,11 @@ export default function Home() {
             url = `${getRepoWithCursor().url}/actions`
             break;
           default:
-            url = `${getRepoWithCursor().url}/tree/${filteredBranches[branchCursor]}`
+            url = `${getRepoWithCursor().url}/tree/${filteredBranches[branchCursor - 3].name}`
         }
         ipcRenderer.send("open-repo", url);
-      }else{
-      ipcRenderer.send("open-repo", getRepoWithCursor().url);
+      } else {
+        ipcRenderer.send("open-repo", getRepoWithCursor().url);
       }
       // ipcRenderer.once("Enter-reply", (e, data) => {
       //   console.log(data, "From Main Process");
@@ -430,7 +434,7 @@ export default function Home() {
   const renderCards = () => {
     // No content
     if (isLoading) {
-      return (<Loader text="Seaching in Github"/>)
+      return (<Loader text="Seaching in Github" />)
       // return (
       //   <div className="home-nocontent-wrapper">
       //     <p>We couldn't fetch you the required data</p>
@@ -447,54 +451,58 @@ export default function Home() {
       //     </p>
       //   </div>
       // );
-    } else if(!isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0){
-      return <EmptyState active={active}/>
-      } else if (active==="Repos" & showBranches){
+    } else if (!isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0) {
+      return <EmptyState active={active} />
+    } else if (active === "Repos" & showBranches) {
       console.log("filtered branches are", filteredBranches)
       const actionCards = [
         <BranchCard
-            branchName="Pull requests"
-            key={0}
-            active={branchCursor == 0}
-            handleCardClick={() => {
-              setShouldScroll(true)
-              setBranchCursor(num);
-            }}
-            pullRequest={true}
-            shouldScroll={shouldScroll}
-          />,
-          <BranchCard
+          branchName="Pull requests"
+          key={0}
+          active={branchCursor == 0}
+          handleCardClick={() => {
+            setShouldScroll(true)
+            setBranchCursor(0);
+            ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/pulls`)
+          }}
+          pullRequest={true}
+          shouldScroll={shouldScroll}
+        />,
+        <BranchCard
           branchName="Issues"
           key={1}
           active={branchCursor == 1}
           handleCardClick={() => {
             setShouldScroll(true)
-            setBranchCursor(num);
+            setBranchCursor(1);
+            ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/issues`)
           }}
           issues={true}
           shouldScroll={shouldScroll}
         />,
         <BranchCard
-            branchName="Actions"
-            key={2}
-            active={branchCursor == 2}
-            handleCardClick={() => {
-              setShouldScroll(true)
-              setBranchCursor(num);
-            }}
-            actions={true}
-            shouldScroll={shouldScroll}
-          />
+          branchName="Actions"
+          key={2}
+          active={branchCursor == 2}
+          handleCardClick={() => {
+            setShouldScroll(true)
+            setBranchCursor(2);
+            ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/actions`)
+          }}
+          actions={true}
+          shouldScroll={shouldScroll}
+        />
       ]
       const branchCards = filteredBranches.map((branch, num) => {
         return (
           <BranchCard
             branchName={branch.name}
-            key={num+3}
-            active={branchCursor == num+3}
+            key={num + 3}
+            active={branchCursor == num + 3}
             handleCardClick={() => {
               setShouldScroll(true)
-              setBranchCursor(num);
+              setBranchCursor(num + 3);
+              ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/tree/${branch.name}`)
             }}
             shouldScroll={shouldScroll}
           />
@@ -514,7 +522,7 @@ export default function Home() {
             data={repo}
             key={num}
             active={cursor === num}
-            handleCardClick={(name) => {
+            handleCardClick={() => {
               console.log(cont.name, "clicked outer")
               handleBadgeUpdate()
               setShouldScroll(true)
@@ -525,6 +533,7 @@ export default function Home() {
                 // }, 0)
                 num
               );
+              ipcRenderer.send('open-repo', cont.url)
             }}
             handleIssuesClick={() => {
               ipcRenderer.send('open-repo', cont.issues)
@@ -546,8 +555,8 @@ export default function Home() {
             cont.role === "author"
               ? "Opened"
               : cont.role === "assignee"
-              ? "Assigned"
-              : "Review",
+                ? "Assigned"
+                : "Review",
           time: moment(cont.time).fromNow(),
           repo_name: cont.repo,
         };
@@ -566,6 +575,7 @@ export default function Home() {
                 // }, 0)
                 num
               );
+              ipcRenderer.send('open-repo', cont.url)
             }}
             shouldScroll={shouldScroll}
           />
@@ -581,8 +591,8 @@ export default function Home() {
             cont.role === "author"
               ? "Opened"
               : cont.role === "asignee"
-              ? "Assigned"
-              : "Review",
+                ? "Assigned"
+                : "Review",
           time: moment(cont.time).fromNow(),
           repo_name: cont.repo,
         };
@@ -602,6 +612,7 @@ export default function Home() {
                 // }, 0)
                 num
               );
+              ipcRenderer.send('open-repo', cont.url)
             }}
             shouldScroll={shouldScroll}
           />
@@ -613,29 +624,29 @@ export default function Home() {
   const renderBranchRespository = () => {
     if (!showBranches) return
     const repo = getRepoWithCursor()
-    if(repo){
+    if (repo) {
       return (
         <RepoCard className="home-selected-repo"
-            data={{
-              name: repo.name,
-              source: repo.isOwnedByUser ? "individual" : "org",
-              source_name: repo.ownedBy,
-            }}
-            active={true}
-            isStatic={true}
-            handleCardClick={() => {}}
-          />
+          data={{
+            name: repo.name,
+            source: repo.isOwnedByUser ? "individual" : "org",
+            source_name: repo.ownedBy,
+          }}
+          active={true}
+          isStatic={true}
+          handleCardClick={() => { }}
+        />
       )
-    }else{
+    } else {
       return (<></>)
     }
   };
 
   const renderPublicRepos = () => {
-    if (active === "Repos" && !showBranches){
-      if (text!="" && isPublicReposLoading){
-        return (<Loader text="Fetching public repos"/>)
-      }else if(publicRepos.length > 0){
+    if (active === "Repos" && !showBranches) {
+      if (text != "" && isPublicReposLoading) {
+        return (<Loader text="Fetching public repos" />)
+      } else if (publicRepos.length > 0) {
         const cards = publicRepos.map((cont, num) => {
           let repo = {
             name: cont.name,
@@ -653,20 +664,20 @@ export default function Home() {
                 setCursor(index)
               }}
               handleIssuesClick={() => {
-              ipcRenderer.send('open-repo', cont.issues)
-            }}
-            handlePRClick={() => {
-              ipcRenderer.send('open-repo', cont.pr)
-            }}
+                ipcRenderer.send('open-repo', cont.issues)
+              }}
+              handlePRClick={() => {
+                ipcRenderer.send('open-repo', cont.pr)
+              }}
               shouldScroll={shouldScroll}
             />
           );
         })
         return (
-        <>
-        <PublicResultsHeader/>
-        {cards}
-        </>
+          <>
+            <PublicResultsHeader />
+            {cards}
+          </>
         )
       }
     }
@@ -686,7 +697,7 @@ export default function Home() {
         pauseOnHover
       />
       <div className="home-container">
-        <Header settings={true} from="/" sync={isSyncing}/>
+        <Header settings={true} from="/" sync={isSyncing} />
         {console.log("Issue Badge going to nav", issue)}
         <div className="home-nav">
           <Nav

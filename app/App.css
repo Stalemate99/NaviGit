@@ -1083,6 +1083,7 @@ p {
 }
 
 .pat-subtext-highlight {
+  cursor: pointer;
   color: #69cc8e;
 }
 
@@ -1113,7 +1114,7 @@ p {
 }
 
 .pat-input-success {
-  background: #69cc8e;
+  background: #c2c4c2;
   color: #ffffff;
   border: 1px solid #69cc8e;
   box-sizing: border-box;
@@ -1200,6 +1201,10 @@ p {
   width: 80%;
   margin: 0 auto;
   font-size: 18px;
+}
+
+.Toastify__toast--success{
+  background-color: #69cc8e;
 }
 
 /* Logo Spin */

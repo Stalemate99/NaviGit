@@ -17,48 +17,48 @@ export default function Sync() {
 
   useEffect(() => {
     (async () => {
-    let pat = JSON.parse(localStorage.getItem("signin")).authKey;
-    const store = new Store();
-    const octo = new Octokit({
-      auth: pat,
-    });
-    const navigit = new Navigit(octo, store, pat);
-    try {
-      console.log("entered")
-      await navigit.initialSetup();
-      console.log("crossed")
-      localStorage.setItem("sync", true);
-      setSync(true);
-      toast.success("Sync successsful", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
+      let pat = JSON.parse(localStorage.getItem("signin")).authKey;
+      const store = new Store();
+      const octo = new Octokit({
+        auth: pat,
       });
-    } catch (err) {
-      console.log(err)
-      toast.error("Unable to sync", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-    }
-  })();
-  return () => {
-    console.log("In component unmount phase");
-    // localStorage.removeItem("sync");
-  };
+      const navigit = new Navigit(octo, store, pat);
+      try {
+        console.log("entered")
+        await navigit.initialSetup();
+        console.log("crossed")
+        localStorage.setItem("sync", true);
+        setSync(true);
+        toast.success("Sync successsful", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      } catch (err) {
+        console.log(err)
+        toast.error("Unable to sync", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+    })();
+    return () => {
+      console.log("In component unmount phase");
+      // localStorage.removeItem("sync");
+    };
 
-}, []);
+  }, []);
 
-  useEffect(() => {}, [help]);
+  useEffect(() => { }, [help]);
 
   if (help) {
     return (

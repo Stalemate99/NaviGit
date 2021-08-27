@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useHistory } from "react-router-dom";
+const { ipcRenderer } = window.require("electron");
 
 import { Octokit } from "@octokit/core";
 import Store from "../js/store";
@@ -122,7 +123,9 @@ export default function Pat() {
         <div className={renderClass()}>{renderText()}</div>
         <p className="pat-subtext">
           Generate a token at github{" "}
-          <span className="pat-subtext-highlight">
+          <span className="pat-subtext-highlight" onClick={() => {
+            ipcRenderer.send('open-repo', 'https://github.com/settings/tokens/new')
+          }}>
             <u>here</u>
           </span>
           , with the scopes{" "}

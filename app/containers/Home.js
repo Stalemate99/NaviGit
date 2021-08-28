@@ -17,6 +17,8 @@ import Loader from "../components/Loader";
 import { concat } from "async";
 import EmptyState from "../components/EmptyState";
 
+import { useHistory } from "react-router-dom";
+
 const { ipcRenderer } = window.require("electron");
 
 const tabs = ["Repos", "PRs", "Issues"];
@@ -30,6 +32,7 @@ const octo = new Octokit({
 const navigit = new Navigit(octo, store, pat);
 
 export default function Home() {
+  const history = useHistory()
   const [active, setActive] = useState(tabs[0]);
   const [content, setContent] = useState([]);
   const [cursor, setCursor] = useState(0);
@@ -81,6 +84,10 @@ export default function Home() {
           setContent(repos);
         }
       }
+    })
+    ipcRenderer.on('show-settings', () => {
+      console.log("show settings called")
+      history.push('/settings')
     })
     return () => {
       document.removeEventListener("keydown", handleKeyPress);

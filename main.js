@@ -60,6 +60,20 @@ app.on("ready", () => {
       label: "Settings",
       click: () => {
         // Invoke event cycle to infrom UI to trigger settings route.
+        if (!mainWindow.isVisible()) {
+          const yPos = parseInt((screen.getPrimaryDisplay().workAreaSize.height - 632) / 2);
+          const xPos = parseInt((screen.getPrimaryDisplay().workAreaSize.width - 536) / 2);
+
+          mainWindow.setBounds({
+            x: xPos,
+            y: yPos,
+            width: 536,
+            height: 632,
+          });
+
+          mainWindow.show();
+        }
+        mainWindow.webContents.send('show-settings')
       },
       accelerator: "CommandOrControl+S",
     },
@@ -151,11 +165,6 @@ function toggleView() {
     mainWindow.show();
   }
 }
-
-app.on('before-quit', () => {
-  console.log("gonna destroy tray")
-  tray.destroy();
-});
 
 // Handle IPC
 ipcMain.on("open-repo", async (event, data) => {

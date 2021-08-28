@@ -66,6 +66,7 @@ export default function Home() {
     })
     ipcRenderer.on('show', async () => {
       console.log("sync repos show",)
+      inputRef.current.focus()
       const since = localStorage.getItem("last_opened")
       let result
       if (since) { result = await navigit.syncRepos(since) }
@@ -424,6 +425,7 @@ export default function Home() {
 
   const markVisited = () => {
     console.log("inside markvisited", filteredContent[cursor]);
+    if (cursor >= filteredContent.length) return
     if (filteredContent[cursor].key) {
       const branch =
         active === "Repos" ? "repos" : active == "PRs" ? "pr" : "issues";
@@ -452,7 +454,7 @@ export default function Home() {
       //   </div>
       // );
     } else if (!isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0) {
-      return <EmptyState active={active} />
+      return <EmptyState active={active} text={text} />
     } else if (active === "Repos" & showBranches) {
       console.log("filtered branches are", filteredBranches)
       const actionCards = [

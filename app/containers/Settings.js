@@ -18,6 +18,7 @@ import { ToastContainer, toast } from "react-toastify";
 export default function Settings() {
   const history = useHistory();
   const [help, setHelp] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   async function handleSync() {
     let pat = JSON.parse(localStorage.getItem("signin")).authKey;
@@ -27,8 +28,10 @@ export default function Settings() {
     });
     const navigit = new Navigit(octo, store, pat);
     try {
+      setIsSyncing(true)
       await navigit.initialSetup();
       localStorage.setItem("sync", true);
+      setIsSyncing(false)
       toast.success("Sync successsful", {
         position: "top-center",
         autoClose: 5000,
@@ -61,6 +64,7 @@ export default function Settings() {
     localStorage.removeItem('signin')
     localStorage.removeItem('global')
     localStorage.removeItem('sync')
+    localStorage.removeItem('last_opened')
     const store = new Store();
     store.clear()
     history.push("/signin")
@@ -82,7 +86,7 @@ export default function Settings() {
       />
       <div className="settings-container">
         {/*  Implement Settings toggle logic!! */}
-        <Header settings={true} from="/settings" />
+        <Header settings={true} from="/settings" sync={isSyncing} />
         <div className="settings-header">
           <h2 className="settings-title">Settings</h2>
           <div className="settings-back" onClick={() => { history.goBack() }}>

@@ -44,6 +44,8 @@ app.on("ready", () => {
   const iconName = "Logo.png"; // Irrespective of OS png works fine
   const iconPath = path.join(__dirname, `/assets/${iconName}`);
 
+  if (tray) tray.destroy()
+
   tray = new Tray(iconPath);
   tray.setToolTip("Navi~Git");
 
@@ -104,7 +106,7 @@ app.on("ready", () => {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
-  
+
 
   // Tray event handlers
   tray.on("click", (events, bound) => {
@@ -128,7 +130,7 @@ app.on("ready", () => {
 function toggleView() {
   let x = trayX;
   let y = trayY;
-  console.log(x,y)
+  console.log(x, y)
 
   const { height, width } = mainWindow.getBounds();
   if (mainWindow.isVisible()) {
@@ -149,6 +151,11 @@ function toggleView() {
     mainWindow.show();
   }
 }
+
+app.on('before-quit', () => {
+  console.log("gonna destroy tray")
+  tray.destroy();
+});
 
 // Handle IPC
 ipcMain.on("open-repo", async (event, data) => {

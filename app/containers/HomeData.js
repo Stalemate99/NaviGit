@@ -436,6 +436,14 @@ export default function Home({ setLogoSpin }) {
     );
   }
 
+  const shouldShowEmptyState = () => {
+    if (active == "Repos") {
+      return !isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0
+    } else {
+      return !isLoading && filteredContent.length == 0
+    }
+  }
+
   const markVisited = () => {
     console.log("inside markvisited", filteredContent[cursor]);
     if (cursor >= filteredContent.length) return
@@ -447,7 +455,6 @@ export default function Home({ setLogoSpin }) {
   };
 
   const renderCards = () => {
-    console.log(!isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0, "check empty state")
     // No content
     if (isLoading) {
       return (<Loader text="Seaching in Github" />)
@@ -467,7 +474,7 @@ export default function Home({ setLogoSpin }) {
       //     </p>
       //   </div>
       // );
-    } else if (!isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0) {
+    } else if (shouldShowEmptyState()) {
       return <EmptyState active={active} text={text} />
     } else if (active === "Repos" & showBranches) {
       console.log("filtered branches are", filteredBranches)

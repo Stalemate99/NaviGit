@@ -61,7 +61,7 @@ input::-webkit-selection {
 .header-large {
   grid-area: header;
   display: grid;
-  height: 100%;
+  /* height: 100%; */
   grid-template-areas: "logo title settings";
   grid-template-columns: 1fr 2fr 0.9fr;
   justify-content: space-between;
@@ -590,13 +590,20 @@ p {
 }
 
 .home-container {
-  background-color: #1c1a39;
-  color: #ffffff;
   height: 100vh;
   width: 100vw;
+  background-color: #1c1a39;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.home-data-container {
+  color: #ffffff;
   display: grid;
-  grid-template-areas: "header" "home-nav" "home-input" "home-selected-repo" "home-list";
-  grid-template-rows: 0fr 0fr 0fr 0fr 1fr;
+  grid-template-areas: "home-nav" "home-input" "home-selected-repo" "home-list";
+  grid-template-rows: 0fr 0fr 0fr 1fr;
+  overflow-y: hidden;
 }
 
 .home-nav {
@@ -1203,7 +1210,7 @@ p {
   font-size: 18px;
 }
 
-.Toastify__toast--success{
+.Toastify__toast--success {
   background-color: #69cc8e;
 }
 

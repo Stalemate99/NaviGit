@@ -13,6 +13,7 @@ import { Octokit } from "@octokit/core";
 import Navigit from "../js/navigit";
 import Store from "../js/store";
 import { ToastContainer, toast } from "react-toastify";
+import { ipcRenderer } from "electron";
 
 
 export default function Settings() {
@@ -60,11 +61,14 @@ export default function Settings() {
     )
   }
 
-  async function logout() {
+  function logout() {
+    console.log("gonna call logout")
     localStorage.removeItem('signin')
     localStorage.removeItem('global')
     localStorage.removeItem('sync')
     localStorage.removeItem('last_opened')
+    console.log("gonna call send ipc")
+    ipcRenderer.send('clear-global-shortcut', 'val')
     const store = new Store();
     store.clear()
     history.push("/signin")

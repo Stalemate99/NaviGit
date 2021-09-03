@@ -16,6 +16,7 @@ let mainWindow;
 let tray;
 let trayX = 0, trayY = 0;
 let hotKey = "CommandOrControl+B";
+let isGlobalShortcutSet = false
 
 app.on("ready", () => {
   mainWindow = new BrowserWindow({
@@ -33,7 +34,7 @@ app.on("ready", () => {
   });
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   mainWindow.setAlwaysOnTop(
-    true,
+    false,
     process.platform === "win32" ? "screen-saver" : "floating",
     1
   );
@@ -134,10 +135,13 @@ app.on("ready", () => {
   });
 
   // Close when focus is outside
-  mainWindow.on("blur", (events, bound) => {
-    mainWindow.webContents.send('hide')
-    mainWindow.hide();
-    process.platform === "darwin" && app.dock.show();
+  mainWindow.on("blur", (event, bound) => {
+    event.preventDefault()
+    if (isGlobalShortcutSet) {
+      mainWindow.webContents.send('hide')
+      mainWindow.hide();
+      process.platform === "darwin" && app.dock.show();
+    }
   });
 });
 
@@ -179,6 +183,13 @@ ipcMain.on("global-shortcut", (event, data) => {
   globalShortcut.register(data, () => {
     toggleView();
   });
+  isGlobalShortcutSet = true
+})
+
+ipcMain.on("clear-global-shortcut", (event, data) => {
+  console.log("clear global")
+  globalShortcut.unregisterAll()
+  isGlobalShortcutSet = false
 })
 
 app.on('will-quit', () => {

@@ -65,11 +65,10 @@ class Store {
   }
 
   markVisited(branch, key) {
-    console.log(arguments,"heou")
+    console.log(arguments, "heou");
     if (this.data[branch][key]) {
       this.data[branch][key].visited += 1;
-      console.log(this.data[branch][key])
-
+      console.log(this.data[branch][key]);
     }
     this.sync();
   }
@@ -79,33 +78,37 @@ class Store {
     this.sync();
   }
 
-  sync(localDump, name) {
-    if(localDump){
-      if(name=="repos"){
-        Object.keys(localDump["repos"]).forEach((key)=>{
-          this.repoSet(key, localDump["repos"][key])
-        })  
-      } else if (name=="pr"){
-        this.data[name] = {}
-        Object.keys(localDump["pr"]).forEach((key)=>{
-          this.prSet(key, localDump["pr"][key])
-        })
-      }else if (name == "issues"){
-        this.data[name] = {}
-        Object.keys(localDump["issues"]).forEach((key)=>{
-          this.issueSet(key, localDump["issues"][key])
+  sync(localDump, name, since) {
+    console.log("i did get the dump", localDump, name);
+    if (localDump) {
+      if (name == "repos") {
+        if (since === undefined) {
+          this.data[name] = {};
+        }
+        Object.keys(localDump).forEach((key) => {
+          this.repoSet(key, localDump[key]);
+        });
+      } else if (name == "pr") {
+        this.data[name] = {};
+        Object.keys(localDump).forEach((key) => {
+          this.prSet(key, localDump[key]);
+        });
+      } else if (name == "issues") {
+        this.data[name] = {};
+        Object.keys(localDump).forEach((key) => {
+          this.issueSet(key, localDump[key]);
         });
       }
     }
-   
+
     fs.writeFileSync(this.path, JSON.stringify(this.data));
+    console.log("READIT", fs.readFileSync(this.path, "utf-8"));
     return true;
   }
 
   get src() {
     return this.data;
   }
-
 }
 
 function parseDataFile(filePath, defaults) {

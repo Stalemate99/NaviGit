@@ -25,14 +25,9 @@ const tabs = ["Repos", "PRs", "Issues"];
 const store = new Store();
 
 let token = JSON.parse(localStorage.getItem("signin"));
-let pat = token ? token.authKey : '';
-const octo = new Octokit({
-  auth: pat,
-});
-const navigit = new Navigit(octo, store, pat);
 
 export default function Home({ setLogoSpin }) {
-  const history = useHistory()
+  const history = useHistory();
   const [active, setActive] = useState(tabs[0]);
   const [content, setContent] = useState([]);
   const [cursor, setCursor] = useState(0);
@@ -42,11 +37,11 @@ export default function Home({ setLogoSpin }) {
 
   const [isSyncing, setIsSyncing] = useState(false);
 
-  const [filteredBranches, setFilteredBranches] = useState([])
-  const [showBranches, setShowBranches] = useState(false)
+  const [filteredBranches, setFilteredBranches] = useState([]);
+  const [showBranches, setShowBranches] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isPublicReposLoading, setIsPublicReposLoading] = useState(false)
+  const [isPublicReposLoading, setIsPublicReposLoading] = useState(false);
 
   const [branchCursor, setBranchCursor] = useState(0);
   const [branches, setBranches] = useState([]);
@@ -54,27 +49,42 @@ export default function Home({ setLogoSpin }) {
   const [repo, setRepo] = useState(0);
   const [pr, setPr] = useState(0);
   const inputRef = useRef(null);
+  const navigit = useRef(null);
 
   const [shouldScroll, setShouldScroll] = useState(true)
 
-  const [includeSearchResult, setIncludeSearchResult] = useState(0)
-  const [publicRepos, setPublicRepos] = useState([])
+  const [includeSearchResult, setIncludeSearchResult] = useState(0);
+  const [publicRepos, setPublicRepos] = useState([]);
+
+  useEffect(() => {
+    let token = JSON.parse(localStorage.getItem("signin"));
+    let pat = token ? token.authKey : "";
+    const store = new Store();
+
+    const octo = new Octokit({
+      auth: pat,
+    });
+    navigit.current = new Navigit(octo, store, pat);
+  }, []);
 
   useEffect(() => {
     // Listening for keypress
     document.addEventListener("keydown", handleKeyPress);
-    ipcRenderer.on('hide', () => {
-      console.log("sync repos hide")
-    })
-    ipcRenderer.on('show', async () => {
-      console.log("sync repos show",)
-      inputRef.current.focus()
-      const since = localStorage.getItem("last_opened")
-      let result
-      if (since) { result = await navigit.syncRepos(since) }
-      else { result = await navigit.syncRepos() }
-      console.log("sync repos value", result)
-      const now = new Date().toISOString()
+    ipcRenderer.on("hide", () => {
+      console.log("sync repos hide");
+    });
+    ipcRenderer.on("show", async () => {
+      console.log("sync repos show");
+      inputRef.current.focus();
+      const since = localStorage.getItem("last_opened");
+      let result;
+      if (since) {
+        result = await navigit.current.syncRepos(since);
+      } else {
+        result = await navigit.current.syncRepos();
+      }
+      console.log("sync repos value", result);
+      const now = new Date().toISOString();
       localStorage.setItem("last_opened", now);
       if (result && result > 0) {
         setRepo(result);
@@ -83,14 +93,14 @@ export default function Home({ setLogoSpin }) {
           setContent(repos);
         }
       }
-    })
-    ipcRenderer.on('show-settings', () => {
-      console.log("show settings called")
-      history.push('/settings')
-    })
+    });
+    ipcRenderer.on("show-settings", () => {
+      console.log("show settings called");
+      history.push("/settings");
+    });
     return () => {
       document.removeEventListener("keydown", handleKeyPress);
-      ipcRenderer.removeAllListeners()
+      ipcRenderer.removeAllListeners();
     };
   });
 
@@ -103,11 +113,11 @@ export default function Home({ setLogoSpin }) {
     } else if (active === "PRs") {
       const prs = store.getSorted("pr");
       setContent(prs);
-      console.log("PR format", prs)
+      console.log("PR format", prs);
     } else if (active === "Issues") {
       const issues = store.getSorted("issues");
       setContent(issues);
-      console.log("issue format", issues)
+      console.log("issue format", issues);
     }
     setText('')
 
@@ -118,13 +128,13 @@ export default function Home({ setLogoSpin }) {
 
   const handleBadgeUpdate = () => {
     if (active == "Repos") {
-      if (repo > 0) setRepo(0)
+      if (repo > 0) setRepo(0);
     } else if (active == "Issues") {
-      if (issue > 0) setIssue(0)
+      if (issue > 0) setIssue(0);
     } else {
-      if (pr > 0) setPr(0)
+      if (pr > 0) setPr(0);
     }
-  }
+  };
 
   // Debouncing text box
   useEffect(() => {
@@ -133,26 +143,24 @@ export default function Home({ setLogoSpin }) {
         setIsInitialText(false);
       } else if (active === "Repos" && text.includes(":")) {
         if (!showBranches) {
-          setBranchCursor(0)
-          setShowBranches(true)
-          if (branches.length > 0) setBranches([])
-          if (filteredBranches.length > 0) setFilteredBranches([])
-          const repo = getRepoWithCursor()
+          setBranchCursor(0);
+          setShowBranches(true);
+          if (branches.length > 0) setBranches([]);
+          if (filteredBranches.length > 0) setFilteredBranches([]);
+          const repo = getRepoWithCursor();
           fetchBranches(repo.ownedBy, repo.name);
         } else {
           if (branches.length == 0) {
-            const repo = getRepoWithCursor()
+            const repo = getRepoWithCursor();
             fetchBranches(repo.ownedBy, repo.name);
-          }
-          else filterBranches(branches)
+          } else filterBranches(branches);
         }
-
       } else {
         if (showBranches) {
           setShowBranches(false)
         } else {
-          setIsLoading(true)
-          filterContent()
+          setIsLoading(true);
+          filterContent();
         }
       }
     }, 100);
@@ -167,19 +175,19 @@ export default function Home({ setLogoSpin }) {
     setIsPublicReposLoading(true)
     const timer = setTimeout(() => {
       (async () => {
-        const searchText = text
-        const result = await navigit.search(searchText);
+        const searchText = text;
+        const result = await navigit.current.search(searchText);
         if (inputRef.current.value === searchText) {
           // const data = [
           //   ...filteredContent,
           //   ...result
           // ]
-          setPublicRepos(result)
-          setIsPublicReposLoading(false)
+          setPublicRepos(result);
+          setIsPublicReposLoading(false);
         } else if (inputRef.current.value === "") {
-          setIsPublicReposLoading(false)
+          setIsPublicReposLoading(false);
         }
-      })()
+      })();
     }, 400);
 
     return () => clearTimeout(timer);
@@ -193,15 +201,15 @@ export default function Home({ setLogoSpin }) {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSyncing) {
-        setShouldScroll(false)
-        setLogoSpin(true)
-        setIsSyncing(true)
+        setShouldScroll(false);
+        setLogoSpin(true);
+        setIsSyncing(true);
       }
-      const result = await navigit.syncIssues();
+      const result = await navigit.current.syncIssues();
       console.log("issues result returned", result);
       if (result && result > 0) {
         console.log("Issue badge results  issue s came brroooo", result);
-        setShouldScroll(false)
+        setShouldScroll(false);
         setIssue(result);
         console.log("issues fetched bro");
         if (active === "Issues") {
@@ -210,9 +218,9 @@ export default function Home({ setLogoSpin }) {
         }
       }
       if (isSyncing) {
-        setShouldScroll(false)
-        setLogoSpin(false)
-        setIsSyncing(false)
+        setShouldScroll(false);
+        setLogoSpin(false);
+        setIsSyncing(false);
       }
     }, 8000);
 
@@ -223,14 +231,14 @@ export default function Home({ setLogoSpin }) {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSyncing) {
-        setShouldScroll(false)
-        setLogoSpin(true)
-        setIsSyncing(true)
+        setShouldScroll(false);
+        setLogoSpin(true);
+        setIsSyncing(true);
       }
-      const result = await navigit.syncPR();
+      const result = await navigit.current.syncPR();
       if (result && result > 0) {
         console.log(" results came brroooo", result);
-        setShouldScroll(false)
+        setShouldScroll(false);
         setPr(result);
         console.log("PRs fetched bro");
         if (active === "PRs") {
@@ -239,9 +247,9 @@ export default function Home({ setLogoSpin }) {
         }
       }
       if (isSyncing) {
-        setShouldScroll(false)
-        setLogoSpin(false)
-        setIsSyncing(false)
+        setShouldScroll(false);
+        setLogoSpin(false);
+        setIsSyncing(false);
       }
     }, 8000);
 
@@ -249,37 +257,39 @@ export default function Home({ setLogoSpin }) {
   });
 
   const getRepoWithCursor = () => {
-    const i = cursor >= filteredContent.length ? cursor - filteredContent.length : cursor
-    const repo = cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i]
-    console.log("REPO WITH CURSOR", i, cursor)
-    return repo
-  }
+    const i =
+      cursor >= filteredContent.length
+        ? cursor - filteredContent.length
+        : cursor;
+    const repo =
+      cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i];
+    console.log("REPO WITH CURSOR", i, cursor);
+    return repo;
+  };
 
   const filterBranches = (allBranches) => {
-    const branchSplit = text.split(":")
-    const query = branchSplit[branchSplit.length - 1]
+    const branchSplit = text.split(":");
+    const query = branchSplit[branchSplit.length - 1];
     if (query != "") {
       const options = {
-        keys: [
-          "name"
-        ],
-        threshold: 0.1
+        keys: ["name"],
+        threshold: 0.1,
       };
       const fuse = new Fuse(allBranches, options);
       const data = fuse.search(query).map((val) => {
-        return val['item']
-      })
-      setFilteredBranches(data)
+        return val["item"];
+      });
+      setFilteredBranches(data);
       if (data.length > 0) {
-        setBranchCursor(3)
+        setBranchCursor(3);
       } else {
-        setBranchCursor(0)
+        setBranchCursor(0);
       }
     } else {
-      setFilteredBranches(allBranches)
-      setBranchCursor(0)
+      setFilteredBranches(allBranches);
+      setBranchCursor(0);
     }
-  }
+  };
 
   const filterContent = () => {
     if (text != "") {
@@ -308,31 +318,30 @@ export default function Home({ setLogoSpin }) {
     } else if (content.length != filteredContent.length){
       setFilteredContent(content);
     }
-    setShouldScroll(true)
+    setShouldScroll(true);
     setCursor(0);
     setIsLoading(false);
   };
 
   const fetchBranches = async (ownedBy, name) => {
-    const result = await navigit.searchBranches(ownedBy, name)
-    if (inputRef.current.value !== text) return
+    const result = await navigit.current.searchBranches(ownedBy, name);
+    if (inputRef.current.value !== text) return;
     const data = result.map((branch) => {
       return {
-        name: branch
-      }
-    })
-    setBranches(data)
-    filterBranches(data)
-  }
+        name: branch,
+      };
+    });
+    setBranches(data);
+    filterBranches(data);
+  };
 
   const clearBranches = async () => {
-    if (showBranches) setShowBranches(false)
-    if (branches.length > 0) setBranches([])
-    if (filteredBranches.length > 0) setFilteredBranches([])
-    const textArr = text.split(":")
-    setText(textArr[0])
-  }
-
+    if (showBranches) setShowBranches(false);
+    if (branches.length > 0) setBranches([]);
+    if (filteredBranches.length > 0) setFilteredBranches([]);
+    const textArr = text.split(":");
+    setText(textArr[0]);
+  };
 
   const handleKeyPress = async (e) => {
     if (e.code === "Tab") {
@@ -358,46 +367,59 @@ export default function Home({ setLogoSpin }) {
       //     ipcRenderer.send("open-repo", getRepoWithCursor().pr);
       //   }
       //   markVisited();
-      // } else 
+      // } else
       if (e.code.includes("Up")) {
-        e.preventDefault()
-        handleBadgeUpdate()
-        setShouldScroll(true)
+        e.preventDefault();
+        handleBadgeUpdate();
+        setShouldScroll(true);
         if (showBranches) {
-          var index = branchCursor == 0 ? filteredBranches.length + 3 - 1 : (branchCursor - 1) % (filteredBranches.length + 3);
+          var index =
+            branchCursor == 0
+              ? filteredBranches.length + 3 - 1
+              : (branchCursor - 1) % (filteredBranches.length + 3);
           setBranchCursor(index);
         } else {
-          var index = cursor == 0 ? (filteredContent.length + publicRepos.length) - 1 : (cursor - 1) % (filteredContent.length + publicRepos.length);
+          var index =
+            cursor == 0
+              ? filteredContent.length + publicRepos.length - 1
+              : (cursor - 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
       } else if (e.code.includes("Down")) {
-        handleBadgeUpdate()
-        setShouldScroll(true)
+        handleBadgeUpdate();
+        setShouldScroll(true);
         if (showBranches) {
           var index = (branchCursor + 1) % (filteredBranches.length + 3);
           setBranchCursor(index);
         } else {
-          var index = (cursor + 1) % (filteredContent.length + publicRepos.length);
+          var index =
+            (cursor + 1) % (filteredContent.length + publicRepos.length);
           setCursor(index);
         }
       }
     } else if (e.code.includes("Enter")) {
-      markVisited()
-      console.log("filtered branches with cursor", filteredBranches, branchCursor)
+      markVisited();
+      console.log(
+        "filtered branches with cursor",
+        filteredBranches,
+        branchCursor
+      );
       if (showBranches) {
-        let url = ''
+        let url = "";
         switch (branchCursor) {
           case 0:
-            url = `${getRepoWithCursor().pr}`
+            url = `${getRepoWithCursor().pr}`;
             break;
           case 1:
-            url = `${getRepoWithCursor().issues}`
+            url = `${getRepoWithCursor().issues}`;
             break;
           case 2:
-            url = `${getRepoWithCursor().url}/actions`
+            url = `${getRepoWithCursor().url}/actions`;
             break;
           default:
-            url = `${getRepoWithCursor().url}/tree/${filteredBranches[branchCursor - 3].name}`
+            url = `${getRepoWithCursor().url}/tree/${
+              filteredBranches[branchCursor - 3].name
+            }`;
         }
         ipcRenderer.send("open-repo", url);
       } else {
@@ -429,15 +451,20 @@ export default function Home({ setLogoSpin }) {
 
   const shouldShowEmptyState = () => {
     if (active == "Repos") {
-      return !isLoading && !isPublicReposLoading && publicRepos.length == 0 && filteredContent.length == 0
+      return (
+        !isLoading &&
+        !isPublicReposLoading &&
+        publicRepos.length == 0 &&
+        filteredContent.length == 0
+      );
     } else {
-      return !isLoading && filteredContent.length == 0
+      return !isLoading && filteredContent.length == 0;
     }
-  }
+  };
 
   const markVisited = () => {
     console.log("inside markvisited", filteredContent[cursor]);
-    if (cursor >= filteredContent.length) return
+    if (cursor >= filteredContent.length) return;
     if (filteredContent[cursor].key) {
       const branch =
         active === "Repos" ? "repos" : active == "PRs" ? "pr" : "issues";
@@ -448,7 +475,7 @@ export default function Home({ setLogoSpin }) {
   const renderCards = () => {
     // No content
     if (isLoading) {
-      return (<Loader text="Seaching in Github" />)
+      return <Loader text="Seaching in Github" />;
       // return (
       //   <div className="home-nocontent-wrapper">
       //     <p>We couldn't fetch you the required data</p>
@@ -466,18 +493,18 @@ export default function Home({ setLogoSpin }) {
       //   </div>
       // );
     } else if (shouldShowEmptyState()) {
-      return <EmptyState active={active} text={text} />
-    } else if (active === "Repos" & showBranches) {
-      console.log("filtered branches are", filteredBranches)
+      return <EmptyState active={active} text={text} />;
+    } else if ((active === "Repos") & showBranches) {
+      console.log("filtered branches are", filteredBranches);
       const actionCards = [
         <BranchCard
           branchName="Pull requests"
           key={0}
           active={branchCursor == 0}
           handleCardClick={() => {
-            setShouldScroll(true)
+            setShouldScroll(true);
             setBranchCursor(0);
-            ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/pulls`)
+            ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/pulls`);
           }}
           pullRequest={true}
           shouldScroll={shouldScroll}
@@ -487,9 +514,9 @@ export default function Home({ setLogoSpin }) {
           key={1}
           active={branchCursor == 1}
           handleCardClick={() => {
-            setShouldScroll(true)
+            setShouldScroll(true);
             setBranchCursor(1);
-            ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/issues`)
+            ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/issues`);
           }}
           issues={true}
           shouldScroll={shouldScroll}
@@ -499,14 +526,14 @@ export default function Home({ setLogoSpin }) {
           key={2}
           active={branchCursor == 2}
           handleCardClick={() => {
-            setShouldScroll(true)
+            setShouldScroll(true);
             setBranchCursor(2);
-            ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/actions`)
+            ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/actions`);
           }}
           actions={true}
           shouldScroll={shouldScroll}
-        />
-      ]
+        />,
+      ];
       const branchCards = filteredBranches.map((branch, num) => {
         return (
           <BranchCard
@@ -514,15 +541,18 @@ export default function Home({ setLogoSpin }) {
             key={num + 3}
             active={branchCursor == num + 3}
             handleCardClick={() => {
-              setShouldScroll(true)
+              setShouldScroll(true);
               setBranchCursor(num + 3);
-              ipcRenderer.send('open-repo', `${getRepoWithCursor().url}/tree/${branch.name}`)
+              ipcRenderer.send(
+                "open-repo",
+                `${getRepoWithCursor().url}/tree/${branch.name}`
+              );
             }}
             shouldScroll={shouldScroll}
           />
         );
       });
-      return [...actionCards, ...branchCards]
+      return [...actionCards, ...branchCards];
     } else if (active === "Repos") {
       // Repos
       return filteredContent.map((cont, num) => {
@@ -537,9 +567,9 @@ export default function Home({ setLogoSpin }) {
             key={num}
             active={cursor === num}
             handleCardClick={() => {
-              console.log(cont.name, "clicked outer")
-              handleBadgeUpdate()
-              setShouldScroll(true)
+              console.log(cont.name, "clicked outer");
+              handleBadgeUpdate();
+              setShouldScroll(true);
               setCursor(
                 // content.reduce((cur, cont) => {
                 //   if (cont.name === name) cur = content.indexOf(cont);
@@ -547,13 +577,13 @@ export default function Home({ setLogoSpin }) {
                 // }, 0)
                 num
               );
-              ipcRenderer.send('open-repo', cont.url)
+              ipcRenderer.send("open-repo", cont.url);
             }}
             handleIssuesClick={() => {
-              ipcRenderer.send('open-repo', cont.issues)
+              ipcRenderer.send("open-repo", cont.issues);
             }}
             handlePRClick={() => {
-              ipcRenderer.send('open-repo', cont.pr)
+              ipcRenderer.send("open-repo", cont.pr);
             }}
             shouldScroll={shouldScroll}
           />
@@ -569,8 +599,8 @@ export default function Home({ setLogoSpin }) {
             cont.role === "author"
               ? "Opened"
               : cont.role === "assignee"
-                ? "Assigned"
-                : "Review",
+              ? "Assigned"
+              : "Review",
           time: moment(cont.time).fromNow(),
           repo_name: cont.ownedBy + '/' + cont.repo,
         };
@@ -580,8 +610,8 @@ export default function Home({ setLogoSpin }) {
             key={num}
             active={cursor === num}
             handleCardClick={(msg) => {
-              handleBadgeUpdate()
-              setShouldScroll(true)
+              handleBadgeUpdate();
+              setShouldScroll(true);
               setCursor(
                 // content.reduce((cur, cont) => {
                 //   if (cont.message === msg) cur = content.indexOf(cont);
@@ -589,7 +619,7 @@ export default function Home({ setLogoSpin }) {
                 // }, 0)
                 num
               );
-              ipcRenderer.send('open-repo', cont.url)
+              ipcRenderer.send("open-repo", cont.url);
             }}
             shouldScroll={shouldScroll}
           />
@@ -606,8 +636,8 @@ export default function Home({ setLogoSpin }) {
             cont.role === "author"
               ? "Opened"
               : cont.role === "asignee"
-                ? "Assigned"
-                : "Review",
+              ? "Assigned"
+              : "Review",
           time: moment(cont.time).fromNow(),
           repo_name: cont.ownedBy + '/' + cont.repo,
         };
@@ -618,8 +648,8 @@ export default function Home({ setLogoSpin }) {
             key={num}
             active={cursor === num}
             handleCardClick={(msg) => {
-              handleBadgeUpdate()
-              setShouldScroll(true)
+              handleBadgeUpdate();
+              setShouldScroll(true);
               setCursor(
                 // content.reduce((cur, cont) => {
                 //   if (cont.message === msg) cur = content.indexOf(cont);
@@ -627,7 +657,7 @@ export default function Home({ setLogoSpin }) {
                 // }, 0)
                 num
               );
-              ipcRenderer.send('open-repo', cont.url)
+              ipcRenderer.send("open-repo", cont.url);
             }}
             shouldScroll={shouldScroll}
           />
@@ -637,11 +667,12 @@ export default function Home({ setLogoSpin }) {
   };
 
   const renderBranchRespository = () => {
-    if (!showBranches) return
-    const repo = getRepoWithCursor()
+    if (!showBranches) return;
+    const repo = getRepoWithCursor();
     if (repo) {
       return (
-        <RepoCard className="home-selected-repo"
+        <RepoCard
+          className="home-selected-repo"
           data={{
             name: repo.name,
             source: repo.isOwnedByUser ? "individual" : "org",
@@ -649,18 +680,18 @@ export default function Home({ setLogoSpin }) {
           }}
           active={true}
           isStatic={true}
-          handleCardClick={() => { }}
+          handleCardClick={() => {}}
         />
-      )
+      );
     } else {
-      return (<></>)
+      return <></>;
     }
   };
 
   const renderPublicRepos = () => {
     if (active === "Repos" && !showBranches) {
       if (text != "" && isPublicReposLoading) {
-        return (<Loader text="Fetching public repos" />)
+        return <Loader text="Fetching public repos" />;
       } else if (publicRepos.length > 0) {
         const cards = publicRepos.map((cont, num) => {
           let repo = {
@@ -668,35 +699,35 @@ export default function Home({ setLogoSpin }) {
             source: cont.isOwnedByUser ? "individual" : "org",
             source_name: cont.ownedBy,
           };
-          const index = filteredContent.length + num
+          const index = filteredContent.length + num;
           return (
             <RepoCard
               data={repo}
               key={index}
               active={cursor === index}
               handleCardClick={() => {
-                setShouldScroll(true)
-                setCursor(index)
+                setShouldScroll(true);
+                setCursor(index);
               }}
               handleIssuesClick={() => {
-                ipcRenderer.send('open-repo', cont.issues)
+                ipcRenderer.send("open-repo", cont.issues);
               }}
               handlePRClick={() => {
-                ipcRenderer.send('open-repo', cont.pr)
+                ipcRenderer.send("open-repo", cont.pr);
               }}
               shouldScroll={shouldScroll}
             />
           );
-        })
+        });
         return (
           <>
             <PublicResultsHeader />
             {cards}
           </>
-        )
+        );
       }
     }
-  }
+  };
 
   return (
     <>

@@ -1,27 +1,26 @@
 import parse from "parse-link-header";
 import parallel from "async-await-parallel";
-import axios from 'axios';
-import {difference} from 'lodash';
+import axios from "axios";
+import { difference } from "lodash";
 class Navigit {
   constructor(git, store, authKey) {
     this.git = git;
     this.store = store;
     this.authKey = authKey;
-    this.localDump = {"repos":{},"pr":{},"issues":{}};
+    this.localDump = { repos: {}, pr: {}, issues: {} };
   }
 
-  repoSet(key,value){
-  this.localDump["repos"][key]= value; 
+  repoSet(key, value) {
+    this.localDump["repos"][key] = value;
   }
 
-  prSet(key,value){
-    this.localDump["pr"][key]= value; 
+  prSet(key, value) {
+    this.localDump["pr"][key] = value;
   }
 
-  issueSet(key,value ){
-    this.localDump["issues"][key]= value; 
+  issueSet(key, value) {
+    this.localDump["issues"][key] = value;
   }
-
 
   async fetchUserReposV2(page, since = undefined, response) {
     try {
@@ -47,7 +46,7 @@ class Navigit {
           url: repo.html_url,
           ownedBy: repo.full_name.split("/")[0],
           pr: `${repo.html_url}/pulls`,
-          key:repo.full_name,
+          key: repo.full_name,
           private: repo.private,
           issues: `${repo.html_url}/issues`,
         });
@@ -58,18 +57,16 @@ class Navigit {
     }
   }
 
-  
-
   async fetchUserRepos(page = 1, since = undefined) {
     try {
-      console.log("random test", this.git)
+      console.log("random test", this.git);
       const response = await this.git.request("GET /user/repos", {
         page,
         per_page: 100,
         since,
       });
       const lastPage = checkLastPage(page, response);
-      console.log("last page", lastPage)
+      console.log("last page", lastPage);
       await this.fetchUserReposV2(page, since, response);
       if (lastPage != page) {
         const self = this;
@@ -108,7 +105,7 @@ class Navigit {
           isOwnedByUser: repo.owner.type === "Organization" ? false : true,
           url: repo.html_url,
           ownedBy: repo.full_name.split("/")[0],
-          key:repo.full_name,
+          key: repo.full_name,
           pr: `${repo.html_url}/pulls`,
           private: repo.private,
           issues: `${repo.html_url}/issues`,
@@ -172,7 +169,7 @@ class Navigit {
           role,
           title: item.title,
           created: item.created_at,
-          key:item.id,
+          key: item.id,
           url: item.html_url,
           ownedBy: splitUrl[3],
           repo:  splitUrl[4],
@@ -181,11 +178,11 @@ class Navigit {
           id: item.id,
           state: item.state,
           time: time || item.created_at,
-        }
-        if(isIssue){
-          this.issueSet(item.id,payload);
-        }else{
-          this.prSet(item.id,payload);
+        };
+        if (isIssue) {
+          this.issueSet(item.id, payload);
+        } else {
+          this.prSet(item.id, payload);
         }
       }
       return true;
@@ -226,25 +223,30 @@ class Navigit {
     }
   }
 
-  async syncRepos(since = undefined){
-    try{
+  async syncRepos(since = undefined) {
+    try {
       await this.syncUserRepos(since);
       await this.syncUserOrgRepos();
-      const syncDifference = difference(Object.keys(this.localDump["repos"]),Object.keys(this.store.get("repos")));
-      console.log("777 ",syncDifference,this.localDump["repos"])
-      this.store.sync(this.localDump,"repos");
+      const syncDifference = difference(
+        Object.keys(this.localDump["repos"]),
+        Object.keys(this.store.get("repos"))
+      );
+      console.log("777 ", syncDifference, this.localDump["repos"]);
+      console.log("777 underooos", this.localDump, this.localDump["repos"]);
+      this.store.sync(this.localDump["repos"], "repos", since);
+      console.log("777 clearing");
       this.localDump["repos"] = {};
       return syncDifference.length;
-    }catch(e){
+    } catch (e) {
       this.localDump["repos"] = {};
       throw e;
     }
   }
 
   async syncIssues() {
-    console.log("enters syncIssues")
+    console.log("enters syncIssues");
     this.store.set("lastSync", +new Date());
-    console.log("store set")
+    console.log("store set");
     try {
       const roles = ["author", "assignee"];
       const self = this;
@@ -259,10 +261,15 @@ class Navigit {
             })
         );
       }
-      console.log("outside for")
+      console.log("outside for");
       await parallel(tasks);
-      const syncDifference = difference(Object.keys(this.localDump["issues"]),Object.keys(this.store.get("issues")));
-      this.store.sync(this.localDump,"issues");
+      const syncDifference = difference(
+        Object.keys(this.localDump["issues"]),
+        Object.keys(this.store.get("issues"))
+      );
+      console.log("777 localdump issues");
+      this.store.sync(this.localDump["issues"], "issues");
+      console.log("777 issue clearing");
       this.localDump["issues"] = {};
       return syncDifference.length;
     } catch (e) {
@@ -274,7 +281,6 @@ class Navigit {
   async syncPR() {
     this.store.set("lastSync", +new Date());
     try {
-
       const roles = ["author", "review-requested", "assignee"];
       const self = this;
       let tasks = [];
@@ -289,10 +295,15 @@ class Navigit {
         });
       }
       await parallel(tasks);
-      const syncDifference = difference(Object.keys(this.localDump["pr"]),Object.keys(this.store.get("pr")));
-      this.store.sync(this.localDump,"pr");
+      const syncDifference = difference(
+        Object.keys(this.localDump["pr"]),
+        Object.keys(this.store.get("pr"))
+      );
+      console.log("777 localdump pr");
+      this.store.sync(this.localDump["pr"], "pr");
+      console.log("777 pr clearing");
       this.localDump["pr"] = {};
-      console.log(syncDifference,'pr88888 ds')
+      console.log(syncDifference, "pr88888 ds");
       return syncDifference.length;
     } catch (e) {
       this.localDump["pr"] = {};
@@ -357,35 +368,40 @@ class Navigit {
           "Content-Type": "application/json",
         },
       });
-      console.log("event", event)
+      console.log("event", event);
       const filteredObj = event.data
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
         .find((x) => x === role);
       let time;
       if (filteredObj) {
         time = filteredObj.created_at;
       }
-      console.log("time", time)
+      console.log("time", time);
       return time;
     } catch (err) {
       throw err;
     }
   }
 
-   
   async searchBranches(owner, repo) {
-    const response = await this.git.request("GET /repos/{owner}/{repo}/branches", {
-      owner: owner,
-      repo: repo,
-      per_page: 100,
-    });
+    const response = await this.git.request(
+      "GET /repos/{owner}/{repo}/branches",
+      {
+        owner: owner,
+        repo: repo,
+        per_page: 100,
+      }
+    );
     const result = response.data.map((x) => x.name);
-    const index = result.findIndex((x)=> x === "master"|| x=== "main" );
-    console.log("loookouttt****")
+    const index = result.findIndex((x) => x === "master" || x === "main");
+    console.log("loookouttt****");
     console.log(index);
-    if(~index){
+    if (~index) {
       result.unshift(result[index]);
-      result.splice(index+1,1);
+      result.splice(index + 1, 1);
       console.log(result);
     }
     return result;
@@ -406,10 +422,7 @@ class Navigit {
       issues: `${repo.html_url}/issues`,
     }));
   }
-
-  
 }
-
 
 function checkLastPage(page, response) {
   link: '<https://api.github.com/search/issues?q=author%3Amohanpierce99+is%3Apull-request&per_page=30&page=2>; rel="next", <https://api.github.com/search/issues?q=author%3Amohanpierce99+is%3Apull-request&per_page=30&page=2>; rel="last"';

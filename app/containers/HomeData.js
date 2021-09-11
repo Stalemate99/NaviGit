@@ -55,8 +55,6 @@ export default function Home({ setLogoSpin }) {
   const [pr, setPr] = useState(0);
   const inputRef = useRef(null);
 
-  const [isShownOnScreen, setIsShownOnScreen] = useState(true)
-
   const [shouldScroll, setShouldScroll] = useState(true)
 
   const [includeSearchResult, setIncludeSearchResult] = useState(0)
@@ -111,16 +109,12 @@ export default function Home({ setLogoSpin }) {
       setContent(issues);
       console.log("issue format", issues)
     }
+    setText('')
 
     return () => {
       setContent([]);
     };
   }, [active]);
-
-  useEffect(() => {
-    // Snapshot of updates
-    console.log(pr, repo, issue);
-  }, [pr, repo, issue])
 
   const handleBadgeUpdate = () => {
     if (active == "Repos") {
@@ -156,7 +150,6 @@ export default function Home({ setLogoSpin }) {
       } else {
         if (showBranches) {
           setShowBranches(false)
-          console.log("setting branches empty")
         } else {
           setIsLoading(true)
           filterContent()
@@ -168,7 +161,7 @@ export default function Home({ setLogoSpin }) {
   }, [text]);
 
   useEffect(() => {
-    if (!includeSearchResult || active != "Repos" || text === "") return
+    if (active != "Repos" || text === "") return
     console.log("enters include search use effect")
     setPublicRepos([])
     setIsPublicReposLoading(true)
@@ -293,10 +286,8 @@ export default function Home({ setLogoSpin }) {
       let keys = [];
       if (active === "Repos") {
         keys = ["name", "ownedBy"];
-      } else if (active === "PRs") {
-        keys = ["repo", "title"];
-      } else if (active === "Issues") {
-        keys = ["repo", "title"];
+      } else if (active === "PRs" || active ==="Issues") {
+        keys = ["repo", "title", "ownedBy"];
       }
       const options = {
         keys,
@@ -314,7 +305,7 @@ export default function Home({ setLogoSpin }) {
         includeSearchResult
       );
       setIncludeSearchResult(includeSearchResult + 1);
-    } else {
+    } else if (content.length != filteredContent.length){
       setFilteredContent(content);
     }
     setShouldScroll(true)
@@ -581,7 +572,7 @@ export default function Home({ setLogoSpin }) {
                 ? "Assigned"
                 : "Review",
           time: moment(cont.time).fromNow(),
-          repo_name: cont.repo,
+          repo_name: cont.ownedBy + '/' + cont.repo,
         };
         return (
           <IssueCard
@@ -605,6 +596,7 @@ export default function Home({ setLogoSpin }) {
         );
       });
     } else if (active === "PRs") {
+      console.log("RERENDER from prs", filteredContent.length)
       // Prs
       return filteredContent.map((cont, num) => {
         let pr = {
@@ -617,7 +609,7 @@ export default function Home({ setLogoSpin }) {
                 ? "Assigned"
                 : "Review",
           time: moment(cont.time).fromNow(),
-          repo_name: cont.repo,
+          repo_name: cont.ownedBy + '/' + cont.repo,
         };
         // console.log(pr);
         return (
@@ -708,6 +700,7 @@ export default function Home({ setLogoSpin }) {
 
   return (
     <>
+      {   console.log("RERENDER HAPPENING", content.length, filteredContent.length, publicRepos.length, active) }
       <ToastContainer
         position="top-center"
         autoClose={5000}

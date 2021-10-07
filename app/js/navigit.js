@@ -25,19 +25,14 @@ class Navigit {
   async fetchUserReposV2(page, since = undefined, response) {
     try {
       if (!response) {
-        console.log("shtitt2");
         let payload;
         if (since) {
-          console.log("since caughtzzz", since);
           payload = { page, per_page: 100, since };
         } else {
-          console.log("since doesnt comeeee ", since);
-
           payload = { page, per_page: 100 };
         }
         response = await this.git.request("GET /user/repos", payload);
       }
-      console.log(response);
       const { data } = response;
       for (let repo of data) {
         this.repoSet(repo.full_name, {
@@ -59,14 +54,12 @@ class Navigit {
 
   async fetchUserRepos(page = 1, since = undefined) {
     try {
-      console.log("random test", this.git);
       const response = await this.git.request("GET /user/repos", {
         page,
         per_page: 100,
         since,
       });
       const lastPage = checkLastPage(page, response);
-      console.log("last page", lastPage);
       await this.fetchUserReposV2(page, since, response);
       if (lastPage != page) {
         const self = this;
@@ -97,7 +90,6 @@ class Navigit {
       const { data } = response;
       for (let repo of data) {
         if (this.store.repoGet(repo.full_name)) {
-          console.log("gottem", repo.full_name);
           return false;
         }
         this.store.repoSet(repo.full_name, {
@@ -136,7 +128,6 @@ class Navigit {
             return await self.fetchUserOrgReposV2(org, i);
           });
         }
-        console.log(parallel);
         await parallel(tasks);
         return true;
       }
@@ -194,9 +185,7 @@ class Navigit {
   async syncUserRepos(since = undefined) {
     try {
       this.store.set("lastSync", +new Date());
-      console.log("gonna call", since);
       const done = await this.fetchUserRepos(1, since);
-      console.log("resolving user repos");
       return true;
     } catch (e) {
       throw e;
@@ -215,7 +204,6 @@ class Navigit {
             return await self.fetchOrgRepos(x);
           })
         );
-        console.log("userorgrepos synced");
         return true;
       }
     } catch (err) {
@@ -231,10 +219,7 @@ class Navigit {
         Object.keys(this.localDump["repos"]),
         Object.keys(this.store.get("repos"))
       );
-      console.log("777 ", syncDifference, this.localDump["repos"]);
-      console.log("777 underooos", this.localDump, this.localDump["repos"]);
       this.store.sync(this.localDump["repos"], "repos", since);
-      console.log("777 clearing");
       this.localDump["repos"] = {};
       return syncDifference.length;
     } catch (e) {
@@ -244,9 +229,7 @@ class Navigit {
   }
 
   async syncIssues() {
-    console.log("enters syncIssues");
     this.store.set("lastSync", +new Date());
-    console.log("store set");
     try {
       const roles = ["author", "assignee"];
       const self = this;
@@ -261,15 +244,12 @@ class Navigit {
             })
         );
       }
-      console.log("outside for");
       await parallel(tasks);
       const syncDifference = difference(
         Object.keys(this.localDump["issues"]),
         Object.keys(this.store.get("issues"))
       );
-      console.log("777 localdump issues");
       this.store.sync(this.localDump["issues"], "issues");
-      console.log("777 issue clearing");
       this.localDump["issues"] = {};
       return syncDifference.length;
     } catch (e) {
@@ -299,11 +279,8 @@ class Navigit {
         Object.keys(this.localDump["pr"]),
         Object.keys(this.store.get("pr"))
       );
-      console.log("777 localdump pr");
       this.store.sync(this.localDump["pr"], "pr");
-      console.log("777 pr clearing");
       this.localDump["pr"] = {};
-      console.log(syncDifference, "pr88888 ds");
       return syncDifference.length;
     } catch (e) {
       this.localDump["pr"] = {};
@@ -321,7 +298,6 @@ class Navigit {
         headers["x-oauth-scopes"]
           .split(",")
           .filter((x) => ~scopes.indexOf(x.trim())).length === scopes.length;
-      console.log(isPermit, "permit");
       if (isPermit) {
         this.store.set("username", data.login);
       } else {
@@ -334,7 +310,6 @@ class Navigit {
   }
 
   async initialSetup() {
-    console.time("Sync");
     try {
       const self = this;
       await parallel([
@@ -351,7 +326,6 @@ class Navigit {
           return true;
         },
       ]);
-      console.timeEnd("Sync");
       return true;
     } catch (err) {
       throw err;
@@ -368,7 +342,6 @@ class Navigit {
           "Content-Type": "application/json",
         },
       });
-      console.log("event", event);
       const filteredObj = event.data
         .sort(
           (a, b) =>
@@ -379,7 +352,6 @@ class Navigit {
       if (filteredObj) {
         time = filteredObj.created_at;
       }
-      console.log("time", time);
       return time;
     } catch (err) {
       throw err;
@@ -397,12 +369,9 @@ class Navigit {
     );
     const result = response.data.map((x) => x.name);
     const index = result.findIndex((x) => x === "master" || x === "main");
-    console.log("loookouttt****");
-    console.log(index);
     if (~index) {
       result.unshift(result[index]);
       result.splice(index + 1, 1);
-      console.log(result);
     }
     return result;
   }

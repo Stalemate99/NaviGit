@@ -19,7 +19,6 @@ export default function SignIn() {
             text="Get Started"
             active={true}
             eventCall={() => {
-              console.log("Pushing to PAT!");
               history.push("/pat");
             }}
           />

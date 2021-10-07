@@ -24,9 +24,7 @@ export default function Sync() {
       });
       const navigit = new Navigit(octo, store, pat);
       try {
-        console.log("entered")
         await navigit.initialSetup();
-        console.log("crossed")
         localStorage.setItem("sync", true);
         setSync(true);
         toast.success("Sync successsful", {
@@ -52,7 +50,6 @@ export default function Sync() {
       }
     })();
     return () => {
-      console.log("In component unmount phase");
       // localStorage.removeItem("sync");
     };
 

@@ -62,12 +62,10 @@ export default function Settings() {
   }
 
   function logout() {
-    console.log("gonna call logout")
     localStorage.removeItem('signin')
     localStorage.removeItem('global')
     localStorage.removeItem('sync')
     localStorage.removeItem('last_opened')
-    console.log("gonna call send ipc")
     ipcRenderer.send('clear-global-shortcut', 'val')
     const store = new Store();
     store.clear()

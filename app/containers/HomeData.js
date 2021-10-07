@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { Octokit } from "@octokit/core";
 import Store from "../js/store";
@@ -6,6 +6,7 @@ import Navigit from "../js/navigit";
 import moment from "moment";
 import Fuse from "fuse.js";
 
+import LazyLoad from 'react-lazy-load';
 import Header from "../components/Header";
 import Nav from "../components/Nav";
 import RepoCard from "../components/RepoCard";
@@ -71,10 +72,8 @@ export default function Home({ setLogoSpin }) {
     // Listening for keypress
     document.addEventListener("keydown", handleKeyPress);
     ipcRenderer.on("hide", () => {
-      console.log("sync repos hide");
     });
     ipcRenderer.on("show", async () => {
-      console.log("sync repos show");
       inputRef.current.focus();
       const since = localStorage.getItem("last_opened");
       let result;
@@ -83,7 +82,6 @@ export default function Home({ setLogoSpin }) {
       } else {
         result = await navigit.current.syncRepos();
       }
-      console.log("sync repos value", result);
       const now = new Date().toISOString();
       localStorage.setItem("last_opened", now);
       if (result && result > 0) {
@@ -95,7 +93,6 @@ export default function Home({ setLogoSpin }) {
       }
     });
     ipcRenderer.on("show-settings", () => {
-      console.log("show settings called");
       history.push("/settings");
     });
     return () => {
@@ -109,15 +106,15 @@ export default function Home({ setLogoSpin }) {
 
     if (active === "Repos") {
       const repos = store.getSorted("repos");
-      setContent(repos);
+      const extendedRepos = [...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos]
+      console.log(repos.length, extendedRepos.length)
+      setContent(extendedRepos);
     } else if (active === "PRs") {
       const prs = store.getSorted("pr");
       setContent(prs);
-      console.log("PR format", prs);
     } else if (active === "Issues") {
       const issues = store.getSorted("issues");
       setContent(issues);
-      console.log("issue format", issues);
     }
     setText('')
 
@@ -170,7 +167,6 @@ export default function Home({ setLogoSpin }) {
 
   useEffect(() => {
     if (active != "Repos" || text === "") return
-    console.log("enters include search use effect")
     setPublicRepos([])
     setIsPublicReposLoading(true)
     const timer = setTimeout(() => {
@@ -206,12 +202,9 @@ export default function Home({ setLogoSpin }) {
         setIsSyncing(true);
       }
       const result = await navigit.current.syncIssues();
-      console.log("issues result returned", result);
       if (result && result > 0) {
-        console.log("Issue badge results  issue s came brroooo", result);
         setShouldScroll(false);
         setIssue(result);
-        console.log("issues fetched bro");
         if (active === "Issues") {
           const issues = store.getSorted("issues");
           setContent(issues);
@@ -237,10 +230,8 @@ export default function Home({ setLogoSpin }) {
       }
       const result = await navigit.current.syncPR();
       if (result && result > 0) {
-        console.log(" results came brroooo", result);
         setShouldScroll(false);
         setPr(result);
-        console.log("PRs fetched bro");
         if (active === "PRs") {
           const prs = store.getSorted("pr");
           setContent(prs);
@@ -263,7 +254,6 @@ export default function Home({ setLogoSpin }) {
         : cursor;
     const repo =
       cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i];
-    console.log("REPO WITH CURSOR", i, cursor);
     return repo;
   };
 
@@ -310,10 +300,6 @@ export default function Home({ setLogoSpin }) {
         return val["item"];
       });
       setFilteredContent(data);
-      console.log(
-        "gonna set include search result to true",
-        includeSearchResult
-      );
       setIncludeSearchResult(includeSearchResult + 1);
     } else if (content.length != filteredContent.length){
       setFilteredContent(content);
@@ -342,6 +328,16 @@ export default function Home({ setLogoSpin }) {
     const textArr = text.split(":");
     setText(textArr[0]);
   };
+
+  const getSearchPlaceholder = () => {
+    switch (active){
+      case 'Repos': return "Type and search private and public repos"
+      case 'PRs': return "Type and search pull requests"
+      case 'Issues': return "Type and search issues"
+    }
+  }
+
+  const RepoLazyCard = lazy(() => import("../components/RepoCard"))
 
   const handleKeyPress = async (e) => {
     if (e.code === "Tab") {
@@ -399,11 +395,6 @@ export default function Home({ setLogoSpin }) {
       }
     } else if (e.code.includes("Enter")) {
       markVisited();
-      console.log(
-        "filtered branches with cursor",
-        filteredBranches,
-        branchCursor
-      );
       if (showBranches) {
         let url = "";
         switch (branchCursor) {
@@ -463,7 +454,6 @@ export default function Home({ setLogoSpin }) {
   };
 
   const markVisited = () => {
-    console.log("inside markvisited", filteredContent[cursor]);
     if (cursor >= filteredContent.length) return;
     if (filteredContent[cursor].key) {
       const branch =
@@ -495,7 +485,6 @@ export default function Home({ setLogoSpin }) {
     } else if (shouldShowEmptyState()) {
       return <EmptyState active={active} text={text} />;
     } else if ((active === "Repos") & showBranches) {
-      console.log("filtered branches are", filteredBranches);
       const actionCards = [
         <BranchCard
           branchName="Pull requests"
@@ -562,12 +551,13 @@ export default function Home({ setLogoSpin }) {
           source_name: cont.ownedBy,
         };
         return (
-          <RepoCard
+          <LazyLoad offsetVertical={0}>
+            <RepoCard
+            num={num}
             data={repo}
             key={num}
             active={cursor === num}
             handleCardClick={() => {
-              console.log(cont.name, "clicked outer");
               handleBadgeUpdate();
               setShouldScroll(true);
               setCursor(
@@ -587,11 +577,12 @@ export default function Home({ setLogoSpin }) {
             }}
             shouldScroll={shouldScroll}
           />
+          </LazyLoad>
+          
         );
       });
     } else if (active === "Issues") {
       //Issues
-      console.log(content);
       return filteredContent.map((cont, num) => {
         let issue = {
           message: cont.title,
@@ -626,7 +617,6 @@ export default function Home({ setLogoSpin }) {
         );
       });
     } else if (active === "PRs") {
-      console.log("RERENDER from prs", filteredContent.length)
       // Prs
       return filteredContent.map((cont, num) => {
         let pr = {
@@ -641,7 +631,6 @@ export default function Home({ setLogoSpin }) {
           time: moment(cont.time).fromNow(),
           repo_name: cont.ownedBy + '/' + cont.repo,
         };
-        // console.log(pr);
         return (
           <PRCard
             data={pr}
@@ -731,7 +720,6 @@ export default function Home({ setLogoSpin }) {
 
   return (
     <>
-      {   console.log("RERENDER HAPPENING", content.length, filteredContent.length, publicRepos.length, active) }
       <ToastContainer
         position="top-center"
         autoClose={5000}
@@ -744,7 +732,6 @@ export default function Home({ setLogoSpin }) {
         pauseOnHover
       />
       <div className="home-data-container">
-        {console.log("Issue Badge going to nav", issue)}
         <div className="home-nav">
           <Nav
             currentTab={(tab) => {
@@ -763,10 +750,9 @@ export default function Home({ setLogoSpin }) {
             ref={inputRef}
             type="text"
             className="home-input"
-            placeholder="Type and search private and public repos"
+            placeholder={getSearchPlaceholder()}
             value={text}
             onChange={(e) => {
-              console.log(e);
               setText(e.target.value);
             }}
             autoFocus={true}

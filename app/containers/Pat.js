@@ -32,7 +32,6 @@ export default function Pat() {
   function renderClipboard() {
     navigator.clipboard.readText().then((text) => {
       setPat(text);
-      console.log(text);
     });
   }
 

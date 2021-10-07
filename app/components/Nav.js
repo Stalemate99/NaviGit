@@ -12,7 +12,6 @@ export default function Nav({
   repoBadgeCount,
   handleBadgeChange
 }) {
-  console.log("Issue Badge as prop", issueBadgeCount)
   // const [issueBadge, setIssueBadge] = useState(issueBadgeCount);
   // const [repoBadge, setRepoBadge] = useState(repoBadgeCount);
   // const [prBadge, setPrBadge] = useState(prBadgeCount);
@@ -40,7 +39,6 @@ export default function Nav({
   };
 
   useEffect(() => {
-    console.log("Issue Badge is from key update", issueBadgeCount)
     handleBadgeChange()
     // if (keyUpdate === "Issues") {
     //   handleBadgeChange("issue",0);
@@ -66,7 +64,6 @@ export default function Nav({
           </div>
         </label>
         Issues
-        {console.log("Issue Badge is", issueBadgeCount, keyUpdate)}
         {issueBadgeCount !== 0 ? (
           <label>
             <div className="badge">{issueBadgeCount}</div>

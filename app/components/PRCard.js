@@ -28,7 +28,6 @@ export default function Card({ data, active, handleCardClick, shouldScroll = tru
 
   function renderIcon() {
     if (status === "Review") {
-      console.log("in pr review here");
       return <>{active ? <PlusOneSec /> : <PlusOnePri />}</>;
     } else if (status === "Assigned") {
       return <>{active ? <AssignedSec /> : <AssignedPri />}</>;

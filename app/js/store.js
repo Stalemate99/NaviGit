@@ -7,8 +7,6 @@ class Store {
     const userDataPath = remote.app.getPath("userData");
     opts.defaults = { username: null, repos: {}, issues: {}, pr: {} };
     this.path = path.join(userDataPath, "pref.json");
-    console.log(this.path);
-    console.log(this.path);
     this.data = parseDataFile(this.path, opts.defaults);
   }
 
@@ -65,10 +63,8 @@ class Store {
   }
 
   markVisited(branch, key) {
-    console.log(arguments, "heou");
     if (this.data[branch][key]) {
       this.data[branch][key].visited += 1;
-      console.log(this.data[branch][key]);
     }
     this.sync();
   }
@@ -79,7 +75,6 @@ class Store {
   }
 
   sync(localDump, name, since) {
-    console.log("i did get the dump", localDump, name);
     if (localDump) {
       if (name == "repos") {
         if (since === undefined) {
@@ -102,7 +97,6 @@ class Store {
     }
 
     fs.writeFileSync(this.path, JSON.stringify(this.data));
-    console.log("READIT", fs.readFileSync(this.path, "utf-8"));
     return true;
   }
 

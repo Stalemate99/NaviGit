@@ -1,16 +1,13 @@
 import React, { useEffect, useRef } from "react";
 
 import RepoPri from "../../assets/RepoPri.svg";
-import RepoSec from "../../assets/RepoSec.svg";
 import IssuePri from "../../assets/IssuePri.svg";
-import IssueSec from "../../assets/IssueSec.svg";
 import PRPri from "../../assets/PRPri.svg";
-import PRSec from "../../assets/PRSec.svg";
 import Org from "../../assets/Org.svg";
 import Branch from "../../assets/Branch.svg";
 import Individual from "../../assets/Host.svg";
 
-export default function RepoCard({ active, data, handleCardClick, handlePRClick, handleIssuesClick, isStatic = false, shouldScroll = true }) {
+export default function RepoCard({ active, data, handleCardClick, handlePRClick, handleIssuesClick, isStatic = false, shouldScroll = true, num}) {
   const { name, source, source_name } = data;
   const card = useRef(null);
 
@@ -41,16 +38,7 @@ export default function RepoCard({ active, data, handleCardClick, handlePRClick,
   function renderRepoSpecs() {
     return (
       <>
-        <IssuePri onClick={(e) => {
-          e.stopPropagation()
-          if(handleIssuesClick) handleIssuesClick()
-        }} />
-        <PRPri onClick={(e) => {
-          if (handlePRClick) {
-            e.stopPropagation()
-            handlePRClick()
-          }
-        }}/>
+        
       </>
     );
   }
@@ -72,6 +60,7 @@ export default function RepoCard({ active, data, handleCardClick, handlePRClick,
     );
   }
 
+  console.log("rendered card",num)
   return (
     <div
 
@@ -84,7 +73,7 @@ export default function RepoCard({ active, data, handleCardClick, handlePRClick,
         }: {}
       }
     >
-      <div className="card-type">{active ? <RepoSec /> : <RepoPri />}</div>
+      <div className="card-type svg">{<RepoPri />}</div>
       <div className="card-content-repo">
         <p className="card-content-repo-name">{name}</p>
         <label className="card-content-repo-source">
@@ -92,8 +81,17 @@ export default function RepoCard({ active, data, handleCardClick, handlePRClick,
         </label>
         <p className="card-content-repo-source-name">{source_name}</p>
       </div>
-      <div className="card-specification">
-        {active ? renderActiveRepoSpecs() : renderRepoSpecs()}
+      <div className="card-specification svg">
+        <IssuePri onClick={(e) => {
+            e.stopPropagation()
+            if(handleIssuesClick) handleIssuesClick()
+          }} />
+      <PRPri onClick={(e) => {
+        if (handlePRClick) {
+          e.stopPropagation()
+          handlePRClick()
+        }
+      }}/>
       </div>
     </div>
   );

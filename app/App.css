@@ -1214,6 +1214,11 @@ p {
   background-color: #69cc8e;
 }
 
+
+.active .svg path{
+  fill: #f46161;
+}
+
 /* Logo Spin */
 
 #esZ5OowmARU6_tr {

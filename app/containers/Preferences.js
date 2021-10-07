@@ -36,7 +36,6 @@ export default function Preferences(props) {
     const modifiers = new Set(["Command" ,"Cmd" ,"Control","Ctrl","CommandOrControl","CmdOrCtrl","Alt","Option","AltGr","Shift"])
     let modifierCount = 0
     let keycodeCount = 0
-    console.log(keys, modifiers)
     keys.forEach((key) => {
       if (modifiers.has(key)) {
         modifierCount+=1

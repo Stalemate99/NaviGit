@@ -1,55 +1,48 @@
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useRef } from "react";
 
 import PRPri from "../../assets/PRPri.svg";
-import PRSec from "../../assets/PRSec.svg";
 import PlusOnePri from "../../assets/PlusOnePri.svg";
-import PlusOneSec from "../../assets/PlusOneSec.svg";
 import MentionedPri from "../../assets/MentionPri.svg";
-import MentionedSec from "../../assets/MentionSec.svg";
 import OpenPri from "../../assets/OpenPri.svg";
-import OpenSec from "../../assets/OpenSec.svg";
 import AssignedPri from "../../assets/IdPri.svg";
-import AssignedSec from "../../assets/IdSec.svg";
 import Pending from "../../assets/Pending.svg";
 
-export default function Card({ data, active, handleCardClick, shouldScroll = true }) {
+const Card = forwardRef(({ data, active, handleCardClick, shouldScroll = true }, ref) => {
   const { number = 1, message, status, time, repo_name = "kq" } = data;
-  const card = useRef();
+  // const card = useRef();
 
-  useEffect(() => {
-    if (active) {
-      card.current.classList.add("active");
-      if(shouldScroll) card.current.scrollIntoView();
-    } else if (card.current && card.current.classList.contains("active") > -1) {
-      card.current.classList.remove("active");
-    }
-    // return card.current;
-  });
+  // useEffect(() => {
+  //   if (active) {
+  //     card.current.classList.add("active");
+  //     if(shouldScroll) card.current.scrollIntoView();
+  //   } else if (card.current && card.current.classList.contains("active") > -1) {
+  //     card.current.classList.remove("active");
+  //   }
+  //   // return card.current;
+  // });
 
   function renderIcon() {
     if (status === "Review") {
-      return <>{active ? <PlusOneSec /> : <PlusOnePri />}</>;
+      return <PlusOnePri />;
     } else if (status === "Assigned") {
-      return <>{active ? <AssignedSec /> : <AssignedPri />}</>;
+      return <AssignedPri />;
     } else if (status === "Opened") {
-      return <>{active ? <OpenSec /> : <OpenPri />}</>;
+      return <OpenPri />;
     } else if (status === "Mentioned") {
-      return <>{active ? <MentionedSec /> : <MentionedPri />}</>;
+      return <MentionedPri />;
     }
   }
 
   return (
     <div
-      className="card-wrapper"
-      ref={card}
+      className={`card-wrapper ${active? "active" : ""}`}
+      ref={ref}
       onClick={() => handleCardClick(message)}
     >
       <div className="card-pr-type">
-        <div className="card-type-icon">{active ? <PRSec /> : <PRPri />}</div>
+        <div className="card-type-icon svg"> <PRPri /></div>
         <p
-          className={
-            active ? "card-pr-type-number-active" : "card-pr-type-number"
-          }
+          className="card-pr-type-number"
         >
           # {" " + number}
         </p>
@@ -63,7 +56,9 @@ export default function Card({ data, active, handleCardClick, shouldScroll = tru
         </label>
         <p className="card-content-pr-time">{"- " + time}</p>
       </div>
-      <div className="card-specification">{renderIcon()}</div>
+      <div className="card-specification svg">{renderIcon()}</div>
     </div>
   );
-}
+})
+
+export default Card

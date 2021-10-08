@@ -804,7 +804,7 @@ p {
   color: #b19fff;
 }
 
-.card-pr-type-number-active {
+.active .card-pr-type-number {
   grid-area: pr-number;
   color: #69cc8e;
 }
@@ -1216,7 +1216,7 @@ p {
 
 
 .active .svg path{
-  fill: #f46161;
+  fill: #69CC8E;
 }
 
 /* Logo Spin */

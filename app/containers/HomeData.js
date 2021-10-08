@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, lazy, Suspense } from "react";
+import React, { useEffect, useState, useRef, memo } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { Octokit } from "@octokit/core";
 import Store from "../js/store";
@@ -6,8 +6,6 @@ import Navigit from "../js/navigit";
 import moment from "moment";
 import Fuse from "fuse.js";
 
-import LazyLoad from 'react-lazy-load';
-import Header from "../components/Header";
 import Nav from "../components/Nav";
 import RepoCard from "../components/RepoCard";
 import BranchCard from "../components/BranchCard";
@@ -15,7 +13,6 @@ import PRCard from "../components/PRCard";
 import IssueCard from "../components/IssueCard";
 import PublicResultsHeader from "../components/PublicResultsHeader";
 import Loader from "../components/Loader";
-import { concat } from "async";
 import EmptyState from "../components/EmptyState";
 
 import { useHistory } from "react-router-dom";
@@ -27,35 +24,46 @@ const store = new Store();
 
 let token = JSON.parse(localStorage.getItem("signin"));
 
-export default function Home({ setLogoSpin }) {
+function areEqual(prevProps, nextProps){
+  return true
+}
+
+export default memo(function Home({ setLogoSpin }) {
   const history = useHistory();
   const [active, setActive] = useState(tabs[0]);
   const [content, setContent] = useState([]);
-  const [cursor, setCursor] = useState(0);
   const [text, setText] = useState("");
   const [filteredContent, setFilteredContent] = useState([]);
   const [isInitialText, setIsInitialText] = useState(true);
 
-  const [isSyncing, setIsSyncing] = useState(false);
+  const isSyncing = useRef(false);
 
   const [filteredBranches, setFilteredBranches] = useState([]);
   const [showBranches, setShowBranches] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
-
   const [isPublicReposLoading, setIsPublicReposLoading] = useState(false);
-
-  const [branchCursor, setBranchCursor] = useState(0);
   const [branches, setBranches] = useState([]);
+
   const [issue, setIssue] = useState(0);
   const [repo, setRepo] = useState(0);
   const [pr, setPr] = useState(0);
+
   const inputRef = useRef(null);
   const navigit = useRef(null);
 
-  const [shouldScroll, setShouldScroll] = useState(true)
-
   const [includeSearchResult, setIncludeSearchResult] = useState(0);
   const [publicRepos, setPublicRepos] = useState([]);
+
+
+  //Optimizations
+  const cardRefs = useRef({})
+  const branchCardRefs = useRef({})
+  const activeCardCursor = useRef(0)
+  const activeBranchCursor = useRef(0)
+
+  const [pageCount, setPageCount] = useState(1)
+  const cardsPerPage = 15
 
   useEffect(() => {
     let token = JSON.parse(localStorage.getItem("signin"));
@@ -106,9 +114,7 @@ export default function Home({ setLogoSpin }) {
 
     if (active === "Repos") {
       const repos = store.getSorted("repos");
-      const extendedRepos = [...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos, ...repos]
-      console.log(repos.length, extendedRepos.length)
-      setContent(extendedRepos);
+      setContent(repos);
     } else if (active === "PRs") {
       const prs = store.getSorted("pr");
       setContent(prs);
@@ -116,6 +122,7 @@ export default function Home({ setLogoSpin }) {
       const issues = store.getSorted("issues");
       setContent(issues);
     }
+    setPageCount(1)
     setText('')
 
     return () => {
@@ -140,7 +147,7 @@ export default function Home({ setLogoSpin }) {
         setIsInitialText(false);
       } else if (active === "Repos" && text.includes(":")) {
         if (!showBranches) {
-          setBranchCursor(0);
+          selectBranchCard(0)
           setShowBranches(true);
           if (branches.length > 0) setBranches([]);
           if (filteredBranches.length > 0) setFilteredBranches([]);
@@ -196,24 +203,21 @@ export default function Home({ setLogoSpin }) {
   // Sync Issues
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!isSyncing) {
-        setShouldScroll(false);
+      if (!isSyncing.current) {
         setLogoSpin(true);
-        setIsSyncing(true);
+        isSyncing.current = true;
       }
       const result = await navigit.current.syncIssues();
       if (result && result > 0) {
-        setShouldScroll(false);
         setIssue(result);
         if (active === "Issues") {
           const issues = store.getSorted("issues");
           setContent(issues);
         }
       }
-      if (isSyncing) {
-        setShouldScroll(false);
+      if (isSyncing.current) {
         setLogoSpin(false);
-        setIsSyncing(false);
+        isSyncing.current = false;
       }
     }, 8000);
 
@@ -223,24 +227,21 @@ export default function Home({ setLogoSpin }) {
   // Sync PR
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!isSyncing) {
-        setShouldScroll(false);
+      if (!isSyncing.current) {
         setLogoSpin(true);
-        setIsSyncing(true);
+        isSyncing.current = true;
       }
       const result = await navigit.current.syncPR();
       if (result && result > 0) {
-        setShouldScroll(false);
         setPr(result);
         if (active === "PRs") {
           const prs = store.getSorted("pr");
           setContent(prs);
         }
       }
-      if (isSyncing) {
-        setShouldScroll(false);
+      if (isSyncing.current) {
         setLogoSpin(false);
-        setIsSyncing(false);
+        isSyncing.current = false;
       }
     }, 8000);
 
@@ -249,11 +250,11 @@ export default function Home({ setLogoSpin }) {
 
   const getRepoWithCursor = () => {
     const i =
-      cursor >= filteredContent.length
-        ? cursor - filteredContent.length
-        : cursor;
+    activeCardCursor.current >= getPageContent().length
+        ? activeCardCursor.current - getPageContent().length
+        : activeCardCursor.current;
     const repo =
-      cursor >= filteredContent.length ? publicRepos[i] : filteredContent[i];
+    activeCardCursor.current >= getPageContent().length ? publicRepos[i] : getPageContent()[i];
     return repo;
   };
 
@@ -271,13 +272,13 @@ export default function Home({ setLogoSpin }) {
       });
       setFilteredBranches(data);
       if (data.length > 0) {
-        setBranchCursor(3);
+        selectBranchCard(3)
       } else {
-        setBranchCursor(0);
+        selectBranchCard(0)
       }
     } else {
       setFilteredBranches(allBranches);
-      setBranchCursor(0);
+      selectBranchCard(0)
     }
   };
 
@@ -304,10 +305,19 @@ export default function Home({ setLogoSpin }) {
     } else if (content.length != filteredContent.length){
       setFilteredContent(content);
     }
-    setShouldScroll(true);
-    setCursor(0);
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    if(!isLoading){
+      setPageCount(1)
+    selectCard(0)
+    }
+  }, [filteredContent, isLoading])
+
+  useEffect(() => {
+    if(!showBranches) selectCard(activeCardCursor.current)
+  }, [showBranches])
 
   const fetchBranches = async (ownedBy, name) => {
     const result = await navigit.current.searchBranches(ownedBy, name);
@@ -337,15 +347,12 @@ export default function Home({ setLogoSpin }) {
     }
   }
 
-  const RepoLazyCard = lazy(() => import("../components/RepoCard"))
-
   const handleKeyPress = async (e) => {
     if (e.code === "Tab") {
       e.preventDefault();
       var i = tabs.indexOf(active);
       i = (i + 1) % 3;
       setIsLoading(true);
-      setShouldScroll(true);
       setActive(tabs[i]);
     } else if (e.code.includes("Arrow")) {
       // if (e.code.includes("Left")) {
@@ -367,37 +374,35 @@ export default function Home({ setLogoSpin }) {
       if (e.code.includes("Up")) {
         e.preventDefault();
         handleBadgeUpdate();
-        setShouldScroll(true);
         if (showBranches) {
           var index =
-            branchCursor == 0
+            activeBranchCursor.current == 0
               ? filteredBranches.length + 3 - 1
-              : (branchCursor - 1) % (filteredBranches.length + 3);
-          setBranchCursor(index);
+              : (activeBranchCursor.current - 1) % (filteredBranches.length + 3);
+          selectBranchCard(index)
         } else {
-          var index =
-            cursor == 0
-              ? filteredContent.length + publicRepos.length - 1
-              : (cursor - 1) % (filteredContent.length + publicRepos.length);
-          setCursor(index);
+          if (activeCardCursor.current == 0) return
+              (activeCardCursor.current - 1) % (getPageContent().length + publicRepos.length);
+          var index = (activeCardCursor.current - 1) % (getPageContent().length + publicRepos.length);
+              // ? 0 getPageContent().length + publicRepos.length - 1
+          selectCard(index)
         }
       } else if (e.code.includes("Down")) {
         handleBadgeUpdate();
-        setShouldScroll(true);
         if (showBranches) {
-          var index = (branchCursor + 1) % (filteredBranches.length + 3);
-          setBranchCursor(index);
+          var index = (activeBranchCursor.current + 1) % (filteredBranches.length + 3);
+          selectBranchCard(index);
         } else {
           var index =
-            (cursor + 1) % (filteredContent.length + publicRepos.length);
-          setCursor(index);
+            (activeCardCursor.current + 1) % (getPageContent().length + publicRepos.length);
+          selectCard(index);
         }
       }
     } else if (e.code.includes("Enter")) {
       markVisited();
       if (showBranches) {
         let url = "";
-        switch (branchCursor) {
+        switch (activeBranchCursor.current) {
           case 0:
             url = `${getRepoWithCursor().pr}`;
             break;
@@ -409,7 +414,7 @@ export default function Home({ setLogoSpin }) {
             break;
           default:
             url = `${getRepoWithCursor().url}/tree/${
-              filteredBranches[branchCursor - 3].name
+              filteredBranches[activeBranchCursor.current - 3].name
             }`;
         }
         ipcRenderer.send("open-repo", url);
@@ -421,24 +426,6 @@ export default function Home({ setLogoSpin }) {
       // });
     }
   };
-
-  function handleClick(msg) {
-    toast.error("Unable to sync.", {
-      position: "top-center",
-      autoClose: 5000,
-      hideProgressBar: true,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-    });
-    setCursor(
-      content.reduce((cur, cont) => {
-        if (cont.message === msg) cur = content.indexOf(cont);
-        return cur;
-      }, 0)
-    );
-  }
 
   const shouldShowEmptyState = () => {
     if (active == "Repos") {
@@ -454,13 +441,35 @@ export default function Home({ setLogoSpin }) {
   };
 
   const markVisited = () => {
-    if (cursor >= filteredContent.length) return;
-    if (filteredContent[cursor].key) {
+    if (activeCardCursor.current >= getPageContent().length) return;
+    if (getPageContent()[activeCardCursor.current].key) {
       const branch =
         active === "Repos" ? "repos" : active == "PRs" ? "pr" : "issues";
-      store.markVisited(branch, filteredContent[cursor].key);
+      store.markVisited(branch, getPageContent()[activeCardCursor.current].key);
     }
   };
+
+  const selectCard = (num) => {
+    if(cardRefs.current[activeCardCursor.current]) cardRefs.current[activeCardCursor.current].classList.remove("active");
+    activeCardCursor.current = num
+    if(cardRefs.current[num]) {
+      cardRefs.current[num].scrollIntoView()
+      cardRefs.current[activeCardCursor.current].classList.add("active");
+    }
+  } 
+
+  const selectBranchCard = (num) => {
+    if(branchCardRefs.current[activeBranchCursor.current]) branchCardRefs.current[activeBranchCursor.current].classList.remove("active");
+    activeBranchCursor.current = num
+    if(branchCardRefs.current[num]) {
+      branchCardRefs.current[num].scrollIntoView()
+      branchCardRefs.current[activeBranchCursor.current].classList.add("active");
+    }
+  } 
+
+  const getPageContent = () => {
+    return filteredContent.slice(0,cardsPerPage * pageCount)
+  }
 
   const renderCards = () => {
     // No content
@@ -489,38 +498,35 @@ export default function Home({ setLogoSpin }) {
         <BranchCard
           branchName="Pull requests"
           key={0}
-          active={branchCursor == 0}
+          ref={(el) => {branchCardRefs.current[0] = el}}
+          active={activeBranchCursor.current == 0}
           handleCardClick={() => {
-            setShouldScroll(true);
-            setBranchCursor(0);
+            selectBranchCard(0);
             ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/pulls`);
           }}
           pullRequest={true}
-          shouldScroll={shouldScroll}
         />,
         <BranchCard
           branchName="Issues"
           key={1}
-          active={branchCursor == 1}
+          ref={(el) => {branchCardRefs.current[1] = el}}
+          active={activeBranchCursor.current == 1}
           handleCardClick={() => {
-            setShouldScroll(true);
-            setBranchCursor(1);
+            selectBranchCard(1);
             ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/issues`);
           }}
           issues={true}
-          shouldScroll={shouldScroll}
         />,
         <BranchCard
           branchName="Actions"
           key={2}
-          active={branchCursor == 2}
+          ref={(el) => {branchCardRefs.current[2] = el}}
+          active={activeBranchCursor.current == 2}
           handleCardClick={() => {
-            setShouldScroll(true);
-            setBranchCursor(2);
+            selectBranchCard(2);
             ipcRenderer.send("open-repo", `${getRepoWithCursor().url}/actions`);
           }}
           actions={true}
-          shouldScroll={shouldScroll}
         />,
       ];
       const branchCards = filteredBranches.map((branch, num) => {
@@ -528,62 +534,50 @@ export default function Home({ setLogoSpin }) {
           <BranchCard
             branchName={branch.name}
             key={num + 3}
-            active={branchCursor == num + 3}
+            ref={(el) => {branchCardRefs.current[num+3] = el}}
+            active={activeBranchCursor.current == num + 3}
             handleCardClick={() => {
-              setShouldScroll(true);
-              setBranchCursor(num + 3);
+              selectBranchCard(num + 3);
               ipcRenderer.send(
-                "open-repo",
-                `${getRepoWithCursor().url}/tree/${branch.name}`
+                "open-repo", `${getRepoWithCursor().url}/tree/${branch.name}`
               );
             }}
-            shouldScroll={shouldScroll}
           />
         );
       });
       return [...actionCards, ...branchCards];
     } else if (active === "Repos") {
       // Repos
-      return filteredContent.map((cont, num) => {
+      return getPageContent().map((cont, num) => {
         let repo = {
           name: cont.name,
           source: cont.isOwnedByUser ? "individual" : "org",
           source_name: cont.ownedBy,
         };
         return (
-          <LazyLoad offsetVertical={0}>
             <RepoCard
-            num={num}
-            data={repo}
-            key={num}
-            active={cursor === num}
-            handleCardClick={() => {
-              handleBadgeUpdate();
-              setShouldScroll(true);
-              setCursor(
-                // content.reduce((cur, cont) => {
-                //   if (cont.name === name) cur = content.indexOf(cont);
-                //   return cur;
-                // }, 0)
-                num
-              );
-              ipcRenderer.send("open-repo", cont.url);
-            }}
-            handleIssuesClick={() => {
-              ipcRenderer.send("open-repo", cont.issues);
-            }}
-            handlePRClick={() => {
-              ipcRenderer.send("open-repo", cont.pr);
-            }}
-            shouldScroll={shouldScroll}
+              ref={(el) => {cardRefs.current[num] = el}}
+              data={repo}
+              key={num}
+              active={activeCardCursor.current === num}
+              handleCardClick={() => {
+                handleBadgeUpdate();
+                selectCard(num)
+                ipcRenderer.send("open-repo", cont.url);
+              }}
+              handleIssuesClick={() => {
+                ipcRenderer.send("open-repo", cont.issues);
+              }}
+              handlePRClick={() => {
+                ipcRenderer.send("open-repo", cont.pr);
+              }}
           />
-          </LazyLoad>
           
         );
       });
     } else if (active === "Issues") {
       //Issues
-      return filteredContent.map((cont, num) => {
+      return getPageContent().map((cont, num) => {
         let issue = {
           message: cont.title,
           status:
@@ -599,26 +593,19 @@ export default function Home({ setLogoSpin }) {
           <IssueCard
             data={issue}
             key={num}
-            active={cursor === num}
+            ref={(el) => {cardRefs.current[num] = el}}
+            active={activeCardCursor.current === num}
             handleCardClick={(msg) => {
               handleBadgeUpdate();
-              setShouldScroll(true);
-              setCursor(
-                // content.reduce((cur, cont) => {
-                //   if (cont.message === msg) cur = content.indexOf(cont);
-                //   return cur;
-                // }, 0)
-                num
-              );
+              selectCard(num)
               ipcRenderer.send("open-repo", cont.url);
             }}
-            shouldScroll={shouldScroll}
           />
         );
       });
     } else if (active === "PRs") {
       // Prs
-      return filteredContent.map((cont, num) => {
+      return getPageContent().map((cont, num) => {
         let pr = {
           number: cont.number,
           message: cont.title,
@@ -635,20 +622,13 @@ export default function Home({ setLogoSpin }) {
           <PRCard
             data={pr}
             key={num}
-            active={cursor === num}
+            ref={(el) => {cardRefs.current[num] = el}}
+            active={activeCardCursor.current === num}
             handleCardClick={(msg) => {
               handleBadgeUpdate();
-              setShouldScroll(true);
-              setCursor(
-                // content.reduce((cur, cont) => {
-                //   if (cont.message === msg) cur = content.indexOf(cont);
-                //   return cur;
-                // }, 0)
-                num
-              );
+              selectCard(num)
               ipcRenderer.send("open-repo", cont.url);
             }}
-            shouldScroll={shouldScroll}
           />
         );
       });
@@ -678,11 +658,12 @@ export default function Home({ setLogoSpin }) {
   };
 
   const renderPublicRepos = () => {
-    if (active === "Repos" && !showBranches) {
+    const cardsToShow = pageCount * cardsPerPage - filteredContent.length
+    if (active === "Repos" && !showBranches && cardsToShow > 0 ) {
       if (text != "" && isPublicReposLoading) {
         return <Loader text="Fetching public repos" />;
       } else if (publicRepos.length > 0) {
-        const cards = publicRepos.map((cont, num) => {
+        const cards = publicRepos.slice(0,cardsToShow).map((cont, num) => {
           let repo = {
             name: cont.name,
             source: cont.isOwnedByUser ? "individual" : "org",
@@ -693,10 +674,10 @@ export default function Home({ setLogoSpin }) {
             <RepoCard
               data={repo}
               key={index}
-              active={cursor === index}
+              ref={(el) => {cardRefs.current[index] = el}}
+              active={activeCardCursor.current === index}
               handleCardClick={() => {
-                setShouldScroll(true);
-                setCursor(index);
+                selectCard(index)
               }}
               handleIssuesClick={() => {
                 ipcRenderer.send("open-repo", cont.issues);
@@ -704,7 +685,6 @@ export default function Home({ setLogoSpin }) {
               handlePRClick={() => {
                 ipcRenderer.send("open-repo", cont.pr);
               }}
-              shouldScroll={shouldScroll}
             />
           );
         });
@@ -717,6 +697,12 @@ export default function Home({ setLogoSpin }) {
       }
     }
   };
+
+  const onScroll = (e) => {
+    if (Math.ceil(e.target.scrollHeight - (e.target.scrollTop + e.target.offsetHeight)) < 500 && (filteredContent.length + text===""?0:publicRepos.length) > cardsPerPage * pageCount){
+      setPageCount(pageCount + 1)
+    } 
+  }
 
   return (
     <>
@@ -759,11 +745,11 @@ export default function Home({ setLogoSpin }) {
           />
         </div>
         {renderBranchRespository()}
-        <div className="home-list">
+        <div className="home-list" onScroll={onScroll}>
           {renderCards()}
           {renderPublicRepos()}
         </div>
       </div>
     </>
   );
-}
+}, areEqual)

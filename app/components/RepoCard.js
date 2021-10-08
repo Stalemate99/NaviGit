@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useRef } from "react";
 
 import RepoPri from "../../assets/RepoPri.svg";
 import IssuePri from "../../assets/IssuePri.svg";
@@ -7,19 +7,19 @@ import Org from "../../assets/Org.svg";
 import Branch from "../../assets/Branch.svg";
 import Individual from "../../assets/Host.svg";
 
-export default function RepoCard({ active, data, handleCardClick, handlePRClick, handleIssuesClick, isStatic = false, shouldScroll = true, num}) {
+const RepoCard = forwardRef(({ active, data, handleCardClick, handlePRClick, handleIssuesClick, isStatic = false, shouldScroll = true, num}, ref) => {
   const { name, source, source_name } = data;
-  const card = useRef(null);
+  // const card = useRef(null);
 
-  useEffect(() => {
-    if (active) {
-      card.current.classList.add("active");
-      if(!isStatic && shouldScroll) card.current.scrollIntoView();
-    } else if (card.current && card.current.classList.contains("active") > -1) {
-      card.current.classList.remove("active");
-    }
-    // return card.current;
-  });
+  // useEffect(() => {
+  //   if (active) {
+  //     card.current.classList.add("active");
+  //     if(!isStatic && shouldScroll) card.current.scrollIntoView();
+  //   } else if (card.current && card.current.classList.contains("active") > -1) {
+  //     card.current.classList.remove("active");
+  //   }
+  //   // return card.current;
+  // });
 
   function renderRepoSource(source) {
     if (source === "org") {
@@ -35,37 +35,10 @@ export default function RepoCard({ active, data, handleCardClick, handlePRClick,
     }
   }
 
-  function renderRepoSpecs() {
-    return (
-      <>
-        
-      </>
-    );
-  }
-
-  function renderActiveRepoSpecs() {
-    return (
-      <>
-        <IssueSec onClick={(e) => {
-          e.stopPropagation()
-          if(handleIssuesClick) handleIssuesClick()
-        }} />
-        <PRSec onClick={(e) => {
-          if (handlePRClick) {
-          e.stopPropagation()
-            handlePRClick()
-          }
-        }}/>
-      </>
-    );
-  }
-
-  console.log("rendered card",num)
   return (
     <div
-
-      className="card-wrapper"
-      ref={card}
+      className={`card-wrapper ${active? "active" : ""}`}
+      ref={ref}
       onClick={() => handleCardClick(name)}
       style={
         isStatic? {
@@ -95,4 +68,6 @@ export default function RepoCard({ active, data, handleCardClick, handlePRClick,
       </div>
     </div>
   );
-}
+})
+
+export default RepoCard

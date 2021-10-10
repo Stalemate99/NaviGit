@@ -163,7 +163,7 @@ class Navigit {
           key: item.id,
           url: item.html_url,
           ownedBy: splitUrl[3],
-          repo:  splitUrl[4],
+          repo: splitUrl[4],
           number: splitUrl[splitUrl.length - 1],
           events: item.events_url,
           id: item.id,
@@ -221,6 +221,7 @@ class Navigit {
       );
       this.store.sync(this.localDump["repos"], "repos", since);
       this.localDump["repos"] = {};
+      this.store.syncData();
       return syncDifference.length;
     } catch (e) {
       this.localDump["repos"] = {};
@@ -251,6 +252,7 @@ class Navigit {
       );
       this.store.sync(this.localDump["issues"], "issues");
       this.localDump["issues"] = {};
+      this.store.syncData();
       return syncDifference.length;
     } catch (e) {
       this.localDump["issues"] = {};
@@ -281,6 +283,7 @@ class Navigit {
       );
       this.store.sync(this.localDump["pr"], "pr");
       this.localDump["pr"] = {};
+      this.store.syncData();
       return syncDifference.length;
     } catch (e) {
       this.localDump["pr"] = {};
@@ -326,6 +329,7 @@ class Navigit {
           return true;
         },
       ]);
+      this.store.syncData();
       return true;
     } catch (err) {
       throw err;

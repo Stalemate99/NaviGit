@@ -4,6 +4,10 @@ const { remote } = window.require("electron");
 
 class Store {
   constructor(opts = {}) {
+    this.syncData(opts);
+  }
+
+  syncData(opts = {}) {
     const userDataPath = remote.app.getPath("userData");
     opts.defaults = { username: null, repos: {}, issues: {}, pr: {} };
     this.path = path.join(userDataPath, "pref.json");
@@ -20,6 +24,12 @@ class Store {
   }
 
   getSorted(key) {
+    this.syncData();
+    if (key !== "repos") {
+      return Object.values(this.data[key]).sort(
+        (a, b) => new Date(b.time) - new Date(a.time)
+      );
+    }
     return Object.values(this.data[key]).sort((a, b) => b.visited - a.visited);
   }
 

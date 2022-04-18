@@ -1,28 +1,25 @@
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useRef } from "react";
 
 import RepoPri from "../../assets/RepoPri.svg";
-import RepoSec from "../../assets/RepoSec.svg";
 import IssuePri from "../../assets/IssuePri.svg";
-import IssueSec from "../../assets/IssueSec.svg";
 import PRPri from "../../assets/PRPri.svg";
-import PRSec from "../../assets/PRSec.svg";
 import Org from "../../assets/Org.svg";
 import Branch from "../../assets/Branch.svg";
 import Individual from "../../assets/Host.svg";
 
-export default function RepoCard({ active, data }) {
+const RepoCard = forwardRef(({ active, data, handleCardClick, handlePRClick, handleIssuesClick, isStatic = false, shouldScroll = true, num}, ref) => {
   const { name, source, source_name } = data;
-  const card = useRef();
+  // const card = useRef(null);
 
-  useEffect(() => {
-    if (active) {
-      card.current.classList.add("active");
-    }
-    return () => {
-      card.current.classList.indexOf("active") > -1 &&
-        card.current.classList.remove("active");
-    };
-  }, []);
+  // useEffect(() => {
+  //   if (active) {
+  //     card.current.classList.add("active");
+  //     if(!isStatic && shouldScroll) card.current.scrollIntoView();
+  //   } else if (card.current && card.current.classList.contains("active") > -1) {
+  //     card.current.classList.remove("active");
+  //   }
+  //   // return card.current;
+  // });
 
   function renderRepoSource(source) {
     if (source === "org") {
@@ -38,27 +35,18 @@ export default function RepoCard({ active, data }) {
     }
   }
 
-  function renderRepoSpecs() {
-    return (
-      <>
-        <IssuePri />
-        <PRPri />
-      </>
-    );
-  }
-
-  function renderActiveRepoSpecs() {
-    return (
-      <>
-        <IssueSec />
-        <PRSec />
-      </>
-    );
-  }
-
   return (
-    <div className="card-wrapper" ref={card}>
-      <div className="card-type">{active ? <RepoSec /> : <RepoPri />}</div>
+    <div
+      className={`card-wrapper ${active? "active" : ""}`}
+      ref={ref}
+      onClick={() => handleCardClick(name)}
+      style={
+        isStatic? {
+          background:'none'
+        }: {}
+      }
+    >
+      <div className="card-type svg">{<RepoPri />}</div>
       <div className="card-content-repo">
         <p className="card-content-repo-name">{name}</p>
         <label className="card-content-repo-source">
@@ -66,9 +54,20 @@ export default function RepoCard({ active, data }) {
         </label>
         <p className="card-content-repo-source-name">{source_name}</p>
       </div>
-      <div className="card-specification">
-        {active ? renderActiveRepoSpecs() : renderRepoSpecs()}
+      <div className="card-specification svg">
+        <IssuePri onClick={(e) => {
+            e.stopPropagation()
+            if(handleIssuesClick) handleIssuesClick()
+          }} />
+      <PRPri onClick={(e) => {
+        if (handlePRClick) {
+          e.stopPropagation()
+          handlePRClick()
+        }
+      }}/>
       </div>
     </div>
   );
-}
+})
+
+export default RepoCard

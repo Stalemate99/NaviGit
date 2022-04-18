@@ -1,11 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import GitN from "../../assets/GitN.svg";
 import Issue from "../../assets/Issue.svg";
 import PR from "../../assets/PR.svg";
 
-export default function Nav({ currentTab }) {
-  const [active, setActive] = useState("Repos");
+export default function Nav({
+  currentTab,
+  keyUpdate = "Repos",
+  issueBadgeCount,
+  prBadgeCount,
+  repoBadgeCount,
+  handleBadgeChange
+}) {
+  // const [issueBadge, setIssueBadge] = useState(issueBadgeCount);
+  // const [repoBadge, setRepoBadge] = useState(repoBadgeCount);
+  // const [prBadge, setPrBadge] = useState(prBadgeCount);
 
   const style = {
     active: {
@@ -29,13 +38,24 @@ export default function Nav({ currentTab }) {
     },
   };
 
+  useEffect(() => {
+    handleBadgeChange()
+    // if (keyUpdate === "Issues") {
+    //   handleBadgeChange("issue",0);
+    // } else if (keyUpdate === "Repos") {
+    //   handleBadgeChange("repo",0);
+    // } else if (keyUpdate === "PRs") {
+    //   handleBadgeChange("pr",0);
+    // }
+  }, [keyUpdate]);
+
   return (
     <div className="bg">
       <div
-        style={active === "Issues" ? style.active : style.normal}
+        style={keyUpdate === "Issues" ? style.active : style.normal}
         onClick={() => {
           currentTab("Issues");
-          setActive("Issues");
+          handleBadgeChange("issue",0);
         }}
       >
         <label>
@@ -44,15 +64,17 @@ export default function Nav({ currentTab }) {
           </div>
         </label>
         Issues
-        <label>
-          <div className="badge">1</div>
-        </label>
+        {issueBadgeCount !== 0 ? (
+          <label>
+            <div className="badge">{issueBadgeCount}</div>
+          </label>
+        ) : null}
       </div>
       <div
-        style={active === "Repos" ? style.active : style.normal}
+        style={keyUpdate === "Repos" ? style.active : style.normal}
         onClick={() => {
           currentTab("Repos");
-          setActive("Repos");
+          handleBadgeChange("repo",0);
         }}
       >
         <label>
@@ -61,15 +83,17 @@ export default function Nav({ currentTab }) {
           </div>
         </label>
         Repos
-        <label>
-          <div className="badge">1</div>
-        </label>
+        {repoBadgeCount !== 0 ? (
+          <label>
+            <div className="badge">{repoBadgeCount}</div>
+          </label>
+        ) : null}
       </div>
       <div
-        style={active === "PR's" ? style.active : style.normal}
+        style={keyUpdate === "PRs" ? style.active : style.normal}
         onClick={() => {
-          currentTab("PR's");
-          setActive("PR's");
+          currentTab("PRs");
+          handleBadgeChange("pr",0);
         }}
       >
         <label>
@@ -78,9 +102,11 @@ export default function Nav({ currentTab }) {
           </div>
         </label>
         PR's
-        <label>
-          <div className="badge">1</div>
-        </label>
+        {prBadgeCount !== 0 ? (
+          <label>
+            <div className="badge">{prBadgeCount}</div>
+          </label>
+        ) : null}
       </div>
     </div>
   );
